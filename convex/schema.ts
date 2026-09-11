@@ -25,6 +25,11 @@ export const documentStatus = v.union(
   v.literal("failed"),
 );
 
+export const draftKind = v.union(
+  v.literal("appeal"),
+  v.literal("form_submission"),
+);
+
 export const draftStatus = v.union(
   v.literal("drafting"),
   v.literal("pending_approval"),
@@ -105,7 +110,7 @@ export default defineSchema({
   drafts: defineTable({
     caseId: v.id("cases"),
     ownerId: v.string(),
-    kind: v.literal("appeal"),
+    kind: draftKind,
     status: draftStatus,
     subject: v.string(),
     paragraphs: v.array(draftParagraph),
@@ -184,19 +189,32 @@ export default defineSchema({
   monitors: defineTable({
     caseId: v.id("cases"),
     ownerId: v.string(),
-    kind: v.union(v.literal("reply"), v.literal("deadline")),
+    kind: v.union(
+      v.literal("reply"),
+      v.literal("deadline"),
+      v.literal("policy_watch"),
+      v.literal("form_watch"),
+    ),
     status: v.union(
       v.literal("active"),
       v.literal("paused"),
       v.literal("completed"),
       v.literal("failed"),
     ),
+    targetUrl: v.optional(v.string()),
+    firecrawlMonitorId: v.optional(v.string()),
     lastCheckedAt: v.optional(v.number()),
+    lastChangeAt: v.optional(v.number()),
+    lastChangeSummary: v.optional(v.string()),
+    lastSnapshot: v.optional(v.string()),
     nextCheckAt: v.optional(v.number()),
     error: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
+    .index("by_caseId", ["caseId"])
     .index("by_caseId_and_status", ["caseId", "status"])
-    .index("by_ownerId_and_status", ["ownerId", "status"]),
+    .index("by_ownerId_and_status", ["ownerId", "status"])
+    .index("by_status", ["status"])
+    .index("by_firecrawlMonitorId", ["firecrawlMonitorId"]),
 });

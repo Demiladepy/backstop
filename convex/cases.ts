@@ -94,9 +94,7 @@ export const getCase = query({
           .take(100),
         ctx.db
           .query("monitors")
-          .withIndex("by_caseId_and_status", (q) =>
-            q.eq("caseId", args.caseId),
-          )
+          .withIndex("by_caseId", (q) => q.eq("caseId", args.caseId))
           .order("desc")
           .take(25),
       ]);
@@ -350,13 +348,20 @@ export const approveDraft = mutation({
       status: "succeeded",
       entityType: "draft",
       entityId: draft._id,
-      detail: "Draft approved by its owner. No message was sent.",
+      detail:
+        draft.kind === "form_submission"
+          ? "Public form fill approved. Submit remains with the human."
+          : "Draft approved by its owner. Email send was scheduled.",
       createdAt: now,
     });
-    await ctx.scheduler.runAfter(0, internal.email.sendApprovedDraft, {
-      draftId: draft._id,
-      ownerId,
-    });
+    if (draft.kind === "form_submission") {
+      // Form fills stop before submit even after approval.
+    } else if (draft.kind === "appeal") {
+      await ctx.scheduler.runAfter(0, internal.email.sendApprovedDraft, {
+        draftId: draft._id,
+        ownerId,
+      });
+    }
     return draft._id;
   },
 });

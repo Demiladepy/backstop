@@ -10,6 +10,8 @@
 
 import type * as auth from "../auth.js";
 import type * as cases from "../cases.js";
+import type * as crons from "../crons.js";
+import type * as depth from "../depth.js";
 import type * as draftAppeal from "../draftAppeal.js";
 import type * as email from "../email.js";
 import type * as externalApi from "../externalApi.js";
@@ -28,6 +30,8 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   cases: typeof cases;
+  crons: typeof crons;
+  depth: typeof depth;
   draftAppeal: typeof draftAppeal;
   email: typeof email;
   externalApi: typeof externalApi;

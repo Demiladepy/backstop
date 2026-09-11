@@ -13,6 +13,8 @@ const policySourceInput = v.object({
   publisher: v.optional(v.string()),
   content: v.string(),
   excerpt: v.string(),
+  quotedText: v.string(),
+  relevanceNote: v.string(),
 });
 
 function fail(message: string): never {
@@ -309,6 +311,9 @@ export const completeResearch = internalMutation({
         !source.title.trim() ||
         !source.url.startsWith("http") ||
         !source.content.trim() ||
+        !source.quotedText.trim() ||
+        !source.relevanceNote.trim() ||
+        !source.content.includes(source.quotedText.trim()) ||
         source.content.length > MAX_SOURCE_CONTENT
       ) {
         fail("Policy source has invalid or oversized content");
@@ -323,6 +328,8 @@ export const completeResearch = internalMutation({
           publisher: source.publisher?.trim() || undefined,
           content: source.content.trim(),
           excerpt: source.excerpt.trim().slice(0, 1_500),
+          quotedText: source.quotedText.trim().slice(0, 4_000),
+          relevanceNote: source.relevanceNote.trim().slice(0, 1_000),
           retrievedAt: now,
         }),
       );
@@ -532,6 +539,204 @@ export const failDraft = internalMutation({
       ownerId: args.ownerId,
       actor: "system",
       event: "external.openai.draft_appeal",
+      operationId: args.operationId,
+      status: "failed",
+      entityType: "case",
+      entityId: args.caseId,
+      detail: args.error,
+      createdAt: now,
+    });
+    return null;
+  },
+});
+
+export const upsertMonitor = internalMutation({
+  args: {
+    caseId: v.id("cases"),
+    ownerId: v.string(),
+    kind: v.union(
+      v.literal("deadline"),
+      v.literal("policy_watch"),
+      v.literal("form_watch"),
+    ),
+    targetUrl: v.optional(v.string()),
+    firecrawlMonitorId: v.optional(v.string()),
+    operationId: v.string(),
+    detail: v.string(),
+  },
+  returns: v.id("monitors"),
+  handler: async (ctx, args) => {
+    const caseRow = await ctx.db.get("cases", args.caseId);
+    if (!caseRow || caseRow.ownerId !== args.ownerId) {
+      fail("Case not found");
+    }
+    const existing = (
+      await ctx.db
+        .query("monitors")
+        .withIndex("by_caseId", (q) => q.eq("caseId", args.caseId))
+        .take(25)
+    ).find((row) => row.kind === args.kind && row.status === "active");
+    const now = Date.now();
+    const monitorId =
+      existing?._id ??
+      (await ctx.db.insert("monitors", {
+        caseId: args.caseId,
+        ownerId: args.ownerId,
+        kind: args.kind,
+        status: "active",
+        targetUrl: args.targetUrl,
+        firecrawlMonitorId: args.firecrawlMonitorId,
+        nextCheckAt: now + 6 * 60 * 60 * 1000,
+        createdAt: now,
+        updatedAt: now,
+      }));
+    if (existing) {
+      await ctx.db.patch("monitors", existing._id, {
+        targetUrl: args.targetUrl ?? existing.targetUrl,
+        firecrawlMonitorId:
+          args.firecrawlMonitorId ?? existing.firecrawlMonitorId,
+        status: "active",
+        error: undefined,
+        updatedAt: now,
+      });
+    }
+    await ctx.db.insert("auditLog", {
+      caseId: args.caseId,
+      ownerId: args.ownerId,
+      actor: "system",
+      event: "external.firecrawl.monitor",
+      operationId: args.operationId,
+      status: "succeeded",
+      entityType: "monitor",
+      entityId: monitorId,
+      detail: args.detail,
+      createdAt: now,
+    });
+    return monitorId;
+  },
+});
+
+export const listActiveMonitors = internalQuery({
+  args: {},
+  returns: v.array(schema.doc("monitors")),
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("monitors")
+      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .take(50);
+  },
+});
+
+export const recordMonitorCheck = internalMutation({
+  args: {
+    monitorId: v.id("monitors"),
+    ownerId: v.string(),
+    operationId: v.string(),
+    changed: v.boolean(),
+    summary: v.string(),
+    snapshot: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const monitor = await ctx.db.get("monitors", args.monitorId);
+    if (!monitor || monitor.ownerId !== args.ownerId) return null;
+    const now = Date.now();
+    await ctx.db.patch("monitors", monitor._id, {
+      lastCheckedAt: now,
+      lastChangeAt: args.changed ? now : monitor.lastChangeAt,
+      lastChangeSummary: args.summary,
+      lastSnapshot: args.snapshot ?? monitor.lastSnapshot,
+      nextCheckAt: now + 6 * 60 * 60 * 1000,
+      error: undefined,
+      updatedAt: now,
+    });
+    await ctx.db.insert("auditLog", {
+      caseId: monitor.caseId,
+      ownerId: args.ownerId,
+      actor: "system",
+      event: "external.firecrawl.monitor",
+      operationId: args.operationId,
+      status: "succeeded",
+      entityType: "monitor",
+      entityId: monitor._id,
+      detail: args.summary,
+      createdAt: now,
+    });
+    return null;
+  },
+});
+
+export const completeFormFill = internalMutation({
+  args: {
+    caseId: v.id("cases"),
+    ownerId: v.string(),
+    operationId: v.string(),
+    subject: v.string(),
+    body: v.string(),
+    sourceUrl: v.string(),
+    fallback: v.boolean(),
+  },
+  returns: v.id("drafts"),
+  handler: async (ctx, args) => {
+    const caseRow = await ctx.db.get("cases", args.caseId);
+    if (!caseRow || caseRow.ownerId !== args.ownerId) {
+      fail("Case not found");
+    }
+    const now = Date.now();
+    const text = args.body.startsWith("[UNVERIFIED]")
+      ? args.body
+      : `[UNVERIFIED] ${args.body}`;
+    const draftId = await ctx.db.insert("drafts", {
+      caseId: args.caseId,
+      ownerId: args.ownerId,
+      kind: "form_submission",
+      status: "pending_approval",
+      subject: args.subject.slice(0, 300),
+      paragraphs: [
+        {
+          text,
+          sourceIds: [],
+          verification: "unverified",
+        },
+      ],
+      body: text,
+      createdAt: now,
+      updatedAt: now,
+    });
+    await ctx.db.insert("auditLog", {
+      caseId: args.caseId,
+      ownerId: args.ownerId,
+      actor: "system",
+      event: "external.firecrawl.interact",
+      operationId: args.operationId,
+      status: "succeeded",
+      entityType: "draft",
+      entityId: draftId,
+      detail: args.fallback
+        ? `Recorded fallback form fill for ${args.sourceUrl}. Submit was not attempted.`
+        : `Public form filled up to submit for ${args.sourceUrl}. Submit was not attempted.`,
+      createdAt: now,
+    });
+    return draftId;
+  },
+});
+
+export const failExternalDepth = internalMutation({
+  args: {
+    caseId: v.id("cases"),
+    ownerId: v.string(),
+    operationId: v.string(),
+    event: v.string(),
+    error: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    await ctx.db.insert("auditLog", {
+      caseId: args.caseId,
+      ownerId: args.ownerId,
+      actor: "system",
+      event: args.event,
       operationId: args.operationId,
       status: "failed",
       entityType: "case",

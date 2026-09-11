@@ -184,7 +184,7 @@ export async function scrapeWithFirecrawl(url: string) {
     },
     body: JSON.stringify({
       url,
-      formats: ["markdown"],
+      formats: ["markdown", "html"],
       onlyMainContent: true,
       timeout: 60_000,
     }),
@@ -200,12 +200,119 @@ export async function scrapeWithFirecrawl(url: string) {
   const metadata = object(data.metadata);
   return {
     markdown: data.markdown,
+    html: typeof data.html === "string" ? data.html : "",
+    scrapeId:
+      typeof metadata?.scrapeId === "string" ? metadata.scrapeId : undefined,
     title:
       typeof metadata?.title === "string" ? metadata.title : undefined,
     publisher:
       typeof metadata?.sourceURL === "string"
         ? new URL(metadata.sourceURL).hostname
         : new URL(url).hostname,
+  };
+}
+
+const CREDENTIAL_PATTERN =
+  /password|passwd|card number|credit card|cvv|cvc|bank account|routing number|ssn|social security/i;
+
+export function containsCredentialFields(text: string) {
+  return CREDENTIAL_PATTERN.test(text);
+}
+
+export async function createFirecrawlMonitor(args: {
+  name: string;
+  url: string;
+  webhookUrl: string;
+  goal: string;
+}) {
+  const response = await fetch(`${FIRECRAWL_BASE_URL}/monitor`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${firecrawlKey()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name: args.name,
+      schedule: { text: "every 6 hours" },
+      targets: [{ type: "scrape", urls: [args.url] }],
+      goal: args.goal,
+      judgeEnabled: true,
+      webhook: { url: args.webhookUrl, events: ["monitor.page"] },
+    }),
+  });
+  const payload = object(await readResponse("Firecrawl", response));
+  const data = object(payload?.data) ?? payload;
+  const id =
+    typeof data?.id === "string"
+      ? data.id
+      : typeof data?.monitorId === "string"
+        ? data.monitorId
+        : undefined;
+  if (!id) {
+    throw new ExternalApiError(
+      "Firecrawl",
+      "monitor create response omitted monitor id",
+    );
+  }
+  return id;
+}
+
+export async function interactWithFirecrawl(args: {
+  url: string;
+  prompt: string;
+}) {
+  const scraped = await scrapeWithFirecrawl(args.url);
+  if (!scraped.scrapeId) {
+    throw new ExternalApiError(
+      "Firecrawl",
+      "scrape response omitted metadata.scrapeId needed for /interact",
+    );
+  }
+  const combined = `${scraped.markdown}\n${scraped.html}`;
+  if (containsCredentialFields(combined)) {
+    throw new ExternalApiError(
+      "Firecrawl",
+      "CREDENTIAL_FIELDS_PRESENT: public-form fill aborted because password, card, or bank fields were detected",
+    );
+  }
+  const response = await fetch(
+    `${FIRECRAWL_BASE_URL}/scrape/${scraped.scrapeId}/interact`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${firecrawlKey()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt: args.prompt,
+        timeout: 90,
+      }),
+    },
+  );
+  const payload = object(await readResponse("Firecrawl", response));
+  const data = object(payload?.data) ?? payload;
+  await fetch(`${FIRECRAWL_BASE_URL}/scrape/${scraped.scrapeId}/interact`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${firecrawlKey()}` },
+  }).catch(() => undefined);
+  const output =
+    typeof data?.output === "string"
+      ? data.output
+      : typeof payload?.output === "string"
+        ? payload.output
+        : scraped.markdown.slice(0, 8_000);
+  if (containsCredentialFields(output)) {
+    throw new ExternalApiError(
+      "Firecrawl",
+      "CREDENTIAL_FIELDS_PRESENT: interact output mentioned credential fields; aborting",
+    );
+  }
+  return {
+    scrapeId: scraped.scrapeId,
+    title: scraped.title ?? args.url,
+    output,
+    liveViewUrl:
+      typeof data?.liveViewUrl === "string" ? data.liveViewUrl : undefined,
   };
 }
 

@@ -4,10 +4,58 @@ import { components, internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { action, type ActionCtx } from "./_generated/server";
 import {
+  createStructuredResponse,
   firecrawlKey,
   safeExternalError,
   searchWithFirecrawl,
 } from "./externalApi";
+
+const clauseSchema = {
+  type: "object",
+  properties: {
+    quotedText: { type: "string", minLength: 20, maxLength: 4_000 },
+    relevanceNote: { type: "string", minLength: 1, maxLength: 1_000 },
+  },
+  required: ["quotedText", "relevanceNote"],
+  additionalProperties: false,
+} satisfies Record<string, unknown>;
+
+async function extractPolicyClause(content: string, denialExcerpt: string) {
+  const text = await createStructuredResponse(
+    [
+      {
+        role: "system",
+        content:
+          "Extract one exact, contiguous, verbatim quote from the supplied policy page that is most relevant to the fictional denial. Do not paraphrase the quote and do not invent language. Explain relevance separately.",
+      },
+      {
+        role: "user",
+        content: JSON.stringify({
+          denialExcerpt,
+          policyPage: content.slice(0, 80_000),
+        }),
+      },
+    ],
+    clauseSchema,
+  );
+  const value: unknown = JSON.parse(text);
+  if (typeof value !== "object" || value === null) {
+    throw new Error("OpenAI clause output was not an object");
+  }
+  const row = value as Record<string, unknown>;
+  if (
+    typeof row.quotedText !== "string" ||
+    typeof row.relevanceNote !== "string"
+  ) {
+    throw new Error("OpenAI clause output omitted required fields");
+  }
+  const quotedText = row.quotedText.trim();
+  const relevanceNote = row.relevanceNote.trim();
+  if (!content.includes(quotedText)) {
+    throw new Error("Extracted clause was not an exact quote from the source");
+  }
+  return { quotedText, relevanceNote };
+}
 
 async function scrapePolicy(ctx: ActionCtx, url: string) {
   const client = new FirecrawlScrape(components.firecrawlScrape, {
@@ -87,6 +135,7 @@ export const findPolicy = action({
         "";
       const query = [
         context.case.title,
+        context.case.counterpartyName,
         context.case.category.replaceAll("_", " "),
         focus,
         documentExcerpt.slice(0, 500),
@@ -98,14 +147,18 @@ export const findPolicy = action({
       const settled = await Promise.allSettled(
         results.slice(0, 5).map(async (result) => {
           const scraped = await scrapePolicy(ctx, result.url);
+          const clause = await extractPolicyClause(
+            scraped.markdown,
+            documentExcerpt,
+          );
           return {
             title: scraped.title ?? result.title,
             url: result.url,
             publisher: scraped.publisher,
             content: scraped.markdown.slice(0, 500_000),
-            excerpt: (
-              result.description || scraped.markdown.slice(0, 1_500)
-            ).slice(0, 1_500),
+            excerpt: clause.quotedText.slice(0, 1_500),
+            quotedText: clause.quotedText,
+            relevanceNote: clause.relevanceNote,
           };
         }),
       );

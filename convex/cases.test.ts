@@ -486,3 +486,37 @@ describe("send and webhook gates without external credentials", () => {
     ).toHaveLength(1);
   });
 });
+
+describe("depth gates", () => {
+  test("approved form fills never enqueue email", async () => {
+    const t = convexTest(schema, modules);
+    const owner = t.withIdentity({ tokenIdentifier: "test|owner" });
+    const caseId = await owner.mutation(api.cases.createCase, {
+      title: "Public form denial",
+      category: "medical_denial",
+      counterpartyName: "Sample Health Plan",
+      counterpartyEmail: "appeals@example.com",
+    });
+    const draftId = await t.mutation(internal.workflowModel.completeFormFill, {
+      caseId,
+      ownerId: "test|owner",
+      operationId: "firecrawl:interact:test",
+      subject: "Prepared public form",
+      body: "Filled fields. Submit was not clicked.",
+      sourceUrl: "https://www.medicare.gov/claims-appeals/file-an-appeal",
+      fallback: true,
+    });
+    expect(await owner.mutation(api.cases.approveDraft, { draftId })).toBe(draftId);
+    const detail = await owner.query(api.cases.getCase, { caseId });
+    expect(detail?.drafts[0]).toMatchObject({
+      kind: "form_submission",
+      status: "approved",
+    });
+    expect(detail?.messages).toEqual([]);
+    expect(
+      detail?.audit.some((entry: Doc<"auditLog">) =>
+        entry.detail.includes("Submit remains with the human"),
+      ),
+    ).toBe(true);
+  });
+});

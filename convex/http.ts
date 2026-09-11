@@ -1,6 +1,7 @@
 import { registerStaticRoutes } from "@convex-dev/static-hosting";
 import { httpRouter } from "convex/server";
 import { auth } from "./auth";
+import { firecrawlMonitorWebhook } from "./depth";
 import { agentmail } from "./email";
 import { components } from "./_generated/api";
 import { httpAction } from "./_generated/server";
@@ -17,6 +18,11 @@ http.route({
       request,
     );
   }),
+});
+http.route({
+  path: "/firecrawl/monitor",
+  method: "POST",
+  handler: firecrawlMonitorWebhook,
 });
 registerStaticRoutes(http, components.staticHosting);
 

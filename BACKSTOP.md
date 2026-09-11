@@ -10,9 +10,8 @@ Positioning line (use verbatim in product and pitch copy):
 
 ## Current scope
 
-Phase P0 is foundation only. Do not implement P1 or later workflows until P0
-has a verified Convex integration, managed AI files, deployment, static-hosted
-live URL, and public repository.
+Phase P0 through P6 of the medical-denial v1 path are in scope. Do not add
+other case types, money movement, or credential handling.
 
 ## Inviolable guardrails
 

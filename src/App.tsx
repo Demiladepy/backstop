@@ -7,7 +7,7 @@ import type { Doc, Id } from '../convex/_generated/dataModel'
 import './App.css'
 import { AuthGate } from './AuthGate'
 
-type CaseTab = 'case' | 'evidence' | 'appeal' | 'email' | 'record'
+type CaseTab = 'case' | 'evidence' | 'appeal' | 'email' | 'record' | 'watch'
 type DraftParagraph = Doc<'drafts'>['paragraphs'][number]
 
 const statusCopy: Record<Doc<'cases'>['status'], string> = {
@@ -163,7 +163,7 @@ function CaseBoard({
         <p className="kicker">Your cases / live record</p>
         <h1 id="board-title">
           A clear next step,<br />
-          <em>all the way through.</em>
+          <em>without the noise.</em>
         </h1>
         <p>
           Start with a sample denial. Backstop reads it, finds relevant policy
@@ -176,12 +176,12 @@ function CaseBoard({
 
       <div className="board-register">
         <div className="register-heading">
-          <span>Open folios</span>
+          <span>Cases</span>
           <span>{String(cases.length).padStart(2, '0')}</span>
         </div>
         {cases.length === 0 ? (
           <div className="empty-register">
-            <span className="folio">No. 000</span>
+            <span className="folio">00</span>
             <h2>No case file yet.</h2>
             <p>
               Use a fictional denial letter so you can explore every step
@@ -238,7 +238,7 @@ function Intake({
 }) {
   const createCase = useMutation(api.cases.createCase)
   const [title, setTitle] = useState('Sample denial — outpatient MRI')
-  const [payer, setPayer] = useState('Northstar Health Plan')
+  const [payer, setPayer] = useState('Aetna (fictional demo)')
   const [email, setEmail] = useState('appeals@example.com')
   const [deadline, setDeadline] = useState('')
   const [busy, setBusy] = useState(false)
@@ -288,8 +288,8 @@ function Intake({
 
       <form className="intake-form" onSubmit={(event) => void submit(event)}>
         <div className="form-folio">
-          <span>Form 01</span>
-          <span>Required fields *</span>
+          <span>New case</span>
+          <span>Required *</span>
         </div>
         <label>
           <span>Case title *</span>
@@ -371,7 +371,7 @@ function CaseWorkspace({
     return (
       <section className="not-found">
         <p className="kicker">Case unavailable</p>
-        <h1>This folio is no longer in your record.</h1>
+        <h1>This case is no longer in your record.</h1>
         <button className="primary-action" type="button" onClick={onBoard}>Return to case board</button>
       </section>
     )
@@ -407,6 +407,7 @@ function CaseWorkspace({
             ['evidence', `Evidence ${detail.sources.length}`],
             ['appeal', `Appeal ${detail.drafts.length}`],
             ['email', `Email ${detail.messages.length}`],
+            ['watch', `Watch ${detail.monitors.length}`],
             ['record', `Record ${detail.audit.length}`],
           ] as Array<[CaseTab, string]>).map(([value, label]) => (
             <button
@@ -430,6 +431,7 @@ function CaseWorkspace({
             />
           )}
           {tab === 'email' && <EmailView detail={detail} thread={thread} />}
+          {tab === 'watch' && <WatchView detail={detail} />}
           {tab === 'record' && <AuditView audit={detail.audit} />}
         </div>
       </div>
@@ -446,7 +448,7 @@ function CaseHeader({ caseRow }: { caseRow: Doc<'cases'> }) {
     <header className="case-header">
       <div className="case-heading">
         <p className="kicker">
-          Folio {caseRow._id.slice(-5).toUpperCase()} / {statusCopy[caseRow.status]}
+          {statusCopy[caseRow.status]}
         </p>
         <h1>{caseRow.title}</h1>
         <dl>
@@ -492,8 +494,8 @@ function CaseOverview({
       </section>
       <section className="case-sheet" aria-label="Case summary">
         <div className="sheet-folio">
-          <span>Case memorandum</span>
-          <span>Pg. 01</span>
+          <span>Summary</span>
+          <span>{statusCopy[detail.case.status]}</span>
         </div>
         <h3>{detail.case.title}</h3>
         <p className="sheet-deck">
@@ -606,7 +608,7 @@ function EvidenceView({
     <div className="evidence-layout">
       <section className="document-column">
         <div className="section-heading">
-          <div><p className="kicker">Exhibit A</p><h2>Case documents</h2></div>
+          <div><p className="kicker">Documents</p><h2>Case documents</h2></div>
           <button
             className="secondary-action"
             type="button"
@@ -683,7 +685,7 @@ function EvidenceView({
 
       <section className="policy-column">
         <div className="section-heading">
-          <div><p className="kicker">Exhibits B–{String.fromCharCode(66 + Math.max(policySources.length - 1, 0))}</p><h2>Policy sources</h2></div>
+          <div><p className="kicker">Policy</p><h2>Policy sources</h2></div>
           <span>{policySources.length} verified URLs</span>
         </div>
         {documentSources.length > 0 && policySources.length === 0 && (
@@ -851,8 +853,8 @@ function AppealView({
     <div className="appeal-layout">
       <article className="appeal-paper">
         <div className="paper-folio">
-          <span>Draft appeal / {latest.status.replaceAll('_', ' ')}</span>
-          <span>{formatDate(latest.updatedAt)} · Pg. 01</span>
+          <span>Draft appeal · {latest.status.replaceAll('_', ' ')}</span>
+          <span>{formatDate(latest.updatedAt)}</span>
         </div>
         <label className="subject-line">
           <span>Subject</span>
@@ -1040,6 +1042,130 @@ function EmailView({
       {thread === undefined && detail.case.agentMailInboxId && (
         <p className="thread-sync" aria-live="polite">Checking the verified inbox…</p>
       )}
+    </div>
+  )
+}
+
+function WatchView({
+  detail,
+}: {
+  detail: {
+    case: Doc<'cases'>
+    monitors: Doc<'monitors'>[]
+    drafts: Doc<'drafts'>[]
+  }
+}) {
+  const watchDeadline = useAction(api.depth.watchDeadline)
+  const watchPolicy = useAction(api.depth.watchPolicy)
+  const fillPublicForm = useAction(api.depth.fillPublicForm)
+  const [policyUrl, setPolicyUrl] = useState('')
+  const [busy, setBusy] = useState('')
+  const [error, setError] = useState('')
+  const formDrafts = detail.drafts.filter((draft) => draft.kind === 'form_submission')
+
+  const run = async (label: string, work: () => Promise<unknown>) => {
+    setError('')
+    setBusy(label)
+    try {
+      await work()
+    } catch (caught) {
+      setError(readableError(caught))
+    } finally {
+      setBusy('')
+    }
+  }
+
+  return (
+    <div className="overview-grid">
+      <section className="next-step">
+        <p className="kicker">Deadline / Firecrawl monitor</p>
+        <h2>Watch the deadline.</h2>
+        <p>
+          Watch the appeal deadline and a public policy page. Changes surface here
+          and in the record. Nothing is submitted for you.
+        </p>
+        <div className="review-actions">
+          <button
+            className="primary-action"
+            type="button"
+            disabled={Boolean(busy) || !detail.case.deadlineAt}
+            onClick={() => void run('deadline', () => watchDeadline({ caseId: detail.case._id }))}
+          >
+            {busy === 'deadline' ? 'Arming deadline watch…' : 'Watch this deadline'}
+          </button>
+          {!detail.case.deadlineAt && (
+            <p className="field-help">Add a deadline on intake to enable this watch.</p>
+          )}
+        </div>
+        <label>
+          <span>Public policy URL</span>
+          <input
+            value={policyUrl}
+            onChange={(event) => setPolicyUrl(event.target.value)}
+            placeholder="https://"
+          />
+        </label>
+        <button
+          className="secondary-action"
+          type="button"
+          disabled={Boolean(busy) || !policyUrl.startsWith('https://')}
+          onClick={() => void run('policy', () => watchPolicy({ caseId: detail.case._id, targetUrl: policyUrl }))}
+        >
+          {busy === 'policy' ? 'Creating Firecrawl monitor…' : 'Watch this public page'}
+        </button>
+      </section>
+      <section className="case-sheet">
+        <div className="sheet-folio">
+          <span>Public form / interact</span>
+          <span>Stops before submit</span>
+        </div>
+        <h3>Fill a public form. Stop before submit.</h3>
+        <p className="sheet-deck">
+          Firecrawl /interact prepares a no-login form with sample values and
+          stops. Login, card, and bank fields abort the run.
+        </p>
+        <button
+          className="approve-action"
+          type="button"
+          disabled={Boolean(busy)}
+          onClick={() => void run('form', () => fillPublicForm({ caseId: detail.case._id }))}
+        >
+          {busy === 'form' ? 'Filling public form…' : 'Prepare public form'}
+        </button>
+        {formDrafts.map((draft) => (
+          <p key={draft._id}>
+            <strong>{draft.subject}</strong>
+            <span> · {draft.status.replaceAll('_', ' ')}</span>
+          </p>
+        ))}
+      </section>
+      <section className="recent-record">
+        <div className="section-heading">
+          <h3>Active watches</h3>
+        </div>
+        {detail.monitors.length === 0 ? (
+          <div className="quiet-empty">
+            <span>No watches yet</span>
+            <p>Arm a deadline or public policy page to see proactive catches here.</p>
+          </div>
+        ) : (
+          detail.monitors.map((monitor) => (
+            <div className="record-line" key={monitor._id}>
+              <Mark name={monitor.kind} />
+              <p>
+                <strong>{monitor.kind.replaceAll('_', ' ')}</strong>
+                <span>{monitor.lastChangeSummary ?? monitor.targetUrl ?? 'Deadline watch'}</span>
+              </p>
+              <time>
+                {monitor.lastCheckedAt
+                  ? formatDate(monitor.lastCheckedAt, true)
+                  : 'Not checked yet'}
+              </time>
+            </div>
+          ))
+        )}
+        {error && <p className="form-error" role="alert">{error}</p>}
+      </section>
     </div>
   )
 }

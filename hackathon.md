@@ -55,14 +55,20 @@ action is audited.
 - Added nine adversarial backend tests and two passing Chromium flows covering
   authentication, case creation, keyboard focus, and mobile overflow.
 
+### P6 — Depth
+
+- Added Firecrawl `/monitor` deadline and public-page watches, hourly rechecks,
+  and a signed monitor webhook.
+- Added Firecrawl `/interact` public-form fill that stops before submit,
+  aborts on credential fields, and records a deterministic fallback draft.
+- Form-submission drafts require human approval and never send email.
+
 ### Current release gate
 
-- Local lint, build, backend tests, browser tests, and cloud-dev deployment all
-  pass.
-- Real sponsor API smoke tests await development Firecrawl, OpenAI, and
-  AgentMail environment variables. No mock success path is used.
-- Production currently serves the P0 shell; deploying this release requires a
-  separately approved production deployment.
+- Local lint, build, backend tests, and browser tests are the release checks.
+- Real sponsor API smoke tests need Firecrawl, OpenAI, and AgentMail env vars.
+- Live app: https://festive-roadrunner-713.convex.site
+- Public repository: https://github.com/Demiladepy/backstop
 
 ## Submission links
 
