@@ -163,9 +163,11 @@ footer p {
   margin: 0;
 }
 
-footer span {
+footer a {
   flex: none;
+  color: inherit;
   font-weight: 700;
+  text-underline-offset: 0.2em;
 }
 
 @media (max-width: 760px) {

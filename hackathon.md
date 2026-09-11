@@ -27,14 +27,16 @@ action is audited.
 - Installed and verified the official Convex agent skills and MCP server.
 - Installed CLI-managed Convex AI guidance.
 - Configured the official `@convex-dev/static-hosting` component.
-- Provisioned a local anonymous development deployment for setup verification.
-- Cloud deployment, public URL, and public repository remain blocked on account
-  authentication.
+- Provisioned and verified personal cloud development deployment
+  `patient-retriever-701`.
+- Deployed the backend and frontend to production static hosting at
+  `festive-roadrunner-713.convex.site`.
+- Created the public GitHub repository; initial push remains pending.
 
 ## Submission links
 
-- Live app: TODO — verify before replacing
-- Public repository: TODO — verify before replacing
+- Live app: https://festive-roadrunner-713.convex.site
+- Public repository: https://github.com/Demiladepy/backstop
 - Demo video: TODO — verify before replacing
 
 ## Demo safety

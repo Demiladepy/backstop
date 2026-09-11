@@ -26,10 +26,10 @@ function App() {
 
             <aside className="status" aria-label="Project status">
               <span className="status-label">Current state</span>
-              <strong>Foundation setup in progress</strong>
+              <strong>Hosted foundation live</strong>
               <p>
-                Local checks pass. Cloud deployment and the public repository
-                still need account authentication.
+                Convex cloud and static hosting are verified. The public
+                repository is ready for its initial push.
               </p>
             </aside>
           </div>
@@ -62,7 +62,9 @@ function App() {
           Backstop is a hackathon demo and is not HIPAA compliant. Do not enter
           protected health information, credentials, or payment details.
         </p>
-        <span>Live demo: TODO</span>
+        <a href="https://festive-roadrunner-713.convex.site">
+          Live demo
+        </a>
       </footer>
     </div>
   )

@@ -12,6 +12,7 @@
   --warm-ink: oklch(0.22 0.04 54);
   --display: 'Bodoni Moda', Georgia, serif;
   --body: 'Public Sans', sans-serif;
+  --space-2xs: 0.25rem;
   --space-xs: 0.5rem;
   --space-sm: 0.75rem;
   --space-md: 1rem;
