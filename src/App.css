@@ -1,0 +1,189 @@
+.app-shell {
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) clamp(var(--space-md), 4vw, var(--space-xl));
+  border-bottom: 1px solid var(--line);
+}
+
+.wordmark {
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  text-decoration: none;
+}
+
+.phase,
+.eyebrow,
+.section-number,
+.status-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.phase {
+  color: var(--muted);
+}
+
+.hero {
+  padding: clamp(var(--space-xl), 9vw, var(--space-3xl))
+    clamp(var(--space-md), 7vw, var(--space-2xl));
+}
+
+.eyebrow {
+  color: var(--accent);
+  margin: 0 0 var(--space-lg);
+}
+
+.hero-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.3fr);
+  gap: clamp(var(--space-xl), 8vw, var(--space-3xl));
+  align-items: end;
+}
+
+.hero-copy {
+  max-width: 850px;
+}
+
+h1 {
+  max-width: 13ch;
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: clamp(3.2rem, 8vw, 7.6rem);
+  font-weight: 700;
+  letter-spacing: -0.065em;
+  line-height: 0.9;
+}
+
+.positioning {
+  max-width: 58ch;
+  margin: var(--space-xl) 0 0 clamp(var(--space-lg), 8vw, var(--space-2xl));
+  color: var(--muted);
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  line-height: 1.55;
+}
+
+.status {
+  display: grid;
+  gap: var(--space-sm);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--ink);
+}
+
+.status-label {
+  color: var(--accent);
+}
+
+.status strong {
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 1.4rem;
+}
+
+.status p {
+  max-width: 30ch;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.principles {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.7fr) 1fr;
+  gap: clamp(var(--space-xl), 9vw, var(--space-3xl));
+  padding: var(--space-2xl) clamp(var(--space-md), 7vw, var(--space-2xl));
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.section-number {
+  margin: 0 0 var(--space-md);
+  color: var(--warm);
+}
+
+h2 {
+  max-width: 12ch;
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(2rem, 4vw, 4rem);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.principles ol {
+  display: grid;
+  gap: var(--space-xl);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: principle;
+}
+
+.principles li {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.55fr) 1fr;
+  gap: var(--space-md);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--ink-line);
+  color: var(--paper-muted);
+  counter-increment: principle;
+  line-height: 1.55;
+}
+
+.principles li span {
+  color: var(--paper);
+  font-weight: 700;
+}
+
+footer {
+  display: flex;
+  gap: var(--space-lg);
+  justify-content: space-between;
+  padding: var(--space-md) clamp(var(--space-md), 4vw, var(--space-xl));
+  background: var(--warm);
+  color: var(--warm-ink);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+footer p {
+  max-width: 76ch;
+  margin: 0;
+}
+
+footer span {
+  flex: none;
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .hero-layout,
+  .principles {
+    grid-template-columns: 1fr;
+  }
+
+  .positioning {
+    margin-left: 0;
+  }
+
+  .principles li {
+    grid-template-columns: 1fr;
+    gap: var(--space-xs);
+  }
+
+  footer {
+    flex-direction: column;
+  }
+}

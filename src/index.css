@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,600;6..96,700&family=Public+Sans:wght@400;600;700&display=swap');
+
+:root {
+  --paper: oklch(0.965 0.018 86);
+  --paper-muted: oklch(0.82 0.02 86);
+  --ink: oklch(0.2 0.025 250);
+  --ink-line: oklch(0.38 0.025 250);
+  --muted: oklch(0.46 0.025 250);
+  --line: oklch(0.82 0.025 86);
+  --accent: oklch(0.47 0.16 28);
+  --warm: oklch(0.82 0.13 76);
+  --warm-ink: oklch(0.22 0.04 54);
+  --display: 'Bodoni Moda', Georgia, serif;
+  --body: 'Public Sans', sans-serif;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6rem;
+
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--body);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100svh;
+}
+
+button,
+a {
+  font: inherit;
+}
+
+::selection {
+  color: var(--paper);
+  background: var(--accent);
+}
