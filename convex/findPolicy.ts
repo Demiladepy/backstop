@@ -1,12 +1,51 @@
+import { FirecrawlScrape } from "convex-firecrawl-scrape";
 import { ConvexError, v } from "convex/values";
-import { internal } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { action } from "./_generated/server";
+import { action, type ActionCtx } from "./_generated/server";
 import {
+  firecrawlKey,
   safeExternalError,
-  scrapeWithFirecrawl,
   searchWithFirecrawl,
 } from "./externalApi";
+
+async function scrapePolicy(ctx: ActionCtx, url: string) {
+  const client = new FirecrawlScrape(components.firecrawlScrape, {
+    FIRECRAWL_API_KEY: firecrawlKey(),
+  });
+  const mutationCtx =
+    ctx as unknown as Parameters<FirecrawlScrape["scrape"]>[0];
+  const queryCtx =
+    ctx as unknown as Parameters<FirecrawlScrape["getStatus"]>[0];
+  const { jobId } = await client.scrape(mutationCtx, url, {
+    formats: ["markdown"],
+    onlyMainContent: true,
+  });
+  for (let attempt = 0; attempt < 90; attempt += 1) {
+    const status = await client.getStatus(queryCtx, jobId);
+    if (status?.status === "completed") {
+      const content = await client.getContent(queryCtx, jobId);
+      if (!content?.markdown?.trim()) {
+        throw new Error(`Firecrawl scrape for ${url} returned no markdown`);
+      }
+      const metadata =
+        typeof content.metadata === "object" && content.metadata !== null
+          ? (content.metadata as Record<string, unknown>)
+          : {};
+      return {
+        markdown: content.markdown,
+        title:
+          typeof metadata.title === "string" ? metadata.title : undefined,
+        publisher: new URL(url).hostname,
+      };
+    }
+    if (status?.status === "failed") {
+      throw new Error(status.error ?? `Firecrawl scrape failed for ${url}`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+  }
+  throw new Error(`Firecrawl scrape timed out for ${url}`);
+}
 
 export const findPolicy = action({
   args: {
@@ -58,7 +97,7 @@ export const findPolicy = action({
       const results = await searchWithFirecrawl(query.slice(0, 500));
       const settled = await Promise.allSettled(
         results.slice(0, 5).map(async (result) => {
-          const scraped = await scrapeWithFirecrawl(result.url);
+          const scraped = await scrapePolicy(ctx, result.url);
           return {
             title: scraped.title ?? result.title,
             url: result.url,

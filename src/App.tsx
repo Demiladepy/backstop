@@ -633,12 +633,21 @@ function EvidenceView({
           </div>
         )}
         {detail.documents.length === 0 ? (
-          <button className="document-drop" type="button" onClick={() => fileInput.current?.click()}>
-            <span className="document-corner" />
-            <strong>Place the denial letter here.</strong>
-            <small>Choose a fake or de-identified sample · 25 MB maximum</small>
-            <span>PDF / DOCX / TXT / HTML / CSV</span>
-          </button>
+          <>
+            <button className="document-drop" type="button" onClick={() => fileInput.current?.click()}>
+              <span className="document-corner" />
+              <strong>Place the denial letter here.</strong>
+              <small>Choose a fake or de-identified sample · 25 MB maximum</small>
+              <span>PDF / DOCX / TXT / HTML / CSV</span>
+            </button>
+            <a
+              className="sample-download"
+              href="/samples/sample-denial.html"
+              download="backstop-fictional-denial.html"
+            >
+              Download the fictional demo letter ↘
+            </a>
+          </>
         ) : (
           <div className="document-grid">
             {detail.documents.map((document, index) => (

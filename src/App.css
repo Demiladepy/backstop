@@ -996,6 +996,15 @@ dd {
   border-color: var(--signal-deep);
 }
 
+.sample-download {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  margin-top: var(--space-sm);
+  color: var(--muted);
+  font-size: .75rem;
+}
+
 .document-drop strong {
   font-family: var(--display);
   font-size: 2rem;
