@@ -582,11 +582,17 @@ function getNextStep(detail: {
   if (detail.documents.length === 0) {
     return { title: 'Add the sample denial letter.', copy: 'PDF, Word, HTML, CSV, or plain text. Backstop will create the first evidence source from it.', action: 'Add document', tab: 'evidence' as const }
   }
-  if (detail.documents.some((document) => document.status === 'parsing')) {
+  if (detail.documents.some((document) => document.status === 'parsing') || detail.case.status === 'parsing') {
     return { title: 'The letter is being read.', copy: 'This page updates live. You can stay here while the document becomes a cited source.', action: 'Watch evidence', tab: 'evidence' as const }
   }
+  if (detail.case.status === 'researching') {
+    return { title: 'Finding public policy.', copy: 'Firecrawl is searching and scraping official policy pages from the denial language. This updates live — no manual step needed.', action: 'Watch evidence', tab: 'evidence' as const }
+  }
   if (!detail.sources.some((source) => source.kind === 'policy')) {
-    return { title: 'Find the policy behind the denial.', copy: 'Search public policy material and keep every retrieved clause attached to this case.', action: 'Research policy', tab: 'evidence' as const }
+    return { title: 'Find the policy behind the denial.', copy: detail.case.status === 'error' ? 'Automatic research did not finish. Retry policy search or continue with the letter alone.' : 'Search public policy material and keep every retrieved clause attached to this case.', action: 'Research policy', tab: 'evidence' as const }
+  }
+  if (detail.case.status === 'drafting' || (!detail.drafts.length && detail.sources.length > 0)) {
+    return { title: 'Drafting your appeal.', copy: 'OpenAI is building a cited draft from stored evidence. Approve remains the only send gate.', action: 'Watch appeal', tab: 'appeal' as const }
   }
   if (!detail.drafts.length || detail.drafts[0].status === 'rejected') {
     return { title: 'Build a grounded appeal.', copy: 'Backstop drafts from this case’s stored evidence. Unsupported language stays visibly marked.', action: 'Draft appeal', tab: 'appeal' as const }
@@ -762,7 +768,13 @@ function EvidenceView({
           <div><p className="kicker">Policy</p><h2>Policy sources</h2></div>
           <span>{policySources.length} verified URLs</span>
         </div>
-        {documentSources.length > 0 && policySources.length === 0 && (
+        {documentSources.length > 0 && policySources.length === 0 && detail.case.status === 'researching' && (
+          <div className="quiet-empty">
+            <span>Policy research running</span>
+            <p>Firecrawl is searching public policy pages from the denial letter. Results appear here automatically.</p>
+          </div>
+        )}
+        {documentSources.length > 0 && policySources.length === 0 && detail.case.status !== 'researching' && (
           <div className="research-control">
             <label>
               <span>Optional search focus</span>
@@ -776,7 +788,11 @@ function EvidenceView({
             <button className="primary-action" type="button" onClick={() => void research()} disabled={researching}>
               {researching ? 'Searching public policy…' : 'Find policy sources'}
             </button>
-            <p>Firecrawl search results are stored with their URL and retrieval time.</p>
+            <p>
+              {detail.case.status === 'error'
+                ? 'Automatic research did not finish. Retry here or continue with the letter alone.'
+                : 'Firecrawl search results are stored with their URL and retrieval time.'}
+            </p>
           </div>
         )}
         {policySources.length === 0 && documentSources.length === 0 && (

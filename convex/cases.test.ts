@@ -357,9 +357,9 @@ describe("draft safety and state transitions", () => {
       return await ctx.db.insert("drafts", {
         caseId,
         ownerId: "test|owner",
-        kind: "appeal",
+        kind: "form_submission",
         status: "pending_approval",
-        subject: "Request for review",
+        subject: "Prepared public form",
         paragraphs: [{
           text: "[UNVERIFIED] I request another review.",
           sourceIds: [],
@@ -484,6 +484,144 @@ describe("send and webhook gates without external credentials", () => {
       stored.audits.filter((entry) =>
         entry.event === "external.agentmail.inbound_received"),
     ).toHaveLength(1);
+  });
+});
+
+describe("workflow auto-chain wiring", () => {
+  test("completeParse moves the case into researching and records parse audit", async () => {
+    const t = convexTest(schema, modules);
+    const owner = t.withIdentity({ tokenIdentifier: "test|owner" });
+    const caseId = await owner.mutation(api.cases.createCase, {
+      title: "Parse chain denial",
+      category: "medical_denial",
+    });
+    const documentId = await t.run(async (ctx) => {
+      const now = Date.now();
+      const storageId = await ctx.storage.store(
+        new Blob(["We denied the requested outpatient MRI."], { type: "text/html" }),
+      );
+      return await ctx.db.insert("documents", {
+        caseId,
+        ownerId: "test|owner",
+        storageId,
+        fileName: "sample-denial.html",
+        mimeType: "text/html",
+        size: 1024,
+        status: "parsing",
+        createdAt: now,
+        updatedAt: now,
+      });
+    });
+    await t.mutation(internal.workflowModel.beginParse, {
+      documentId,
+      ownerId: "test|owner",
+      operationId: "firecrawl:parse:test",
+    });
+    await t.mutation(internal.workflowModel.completeParse, {
+      documentId,
+      ownerId: "test|owner",
+      operationId: "firecrawl:parse:test",
+      markdown: "We denied the requested outpatient MRI.",
+    });
+
+    const detail = await owner.query(api.cases.getCase, { caseId });
+    expect(detail?.case.status).toBe("researching");
+    expect(detail?.sources).toHaveLength(1);
+    expect(detail?.audit.map((entry: Doc<"auditLog">) => entry.event)).toEqual(
+      expect.arrayContaining([
+        "case.created",
+        "external.firecrawl.parse",
+      ]),
+    );
+  });
+
+  test("completeResearch stores policy sources and moves the case into drafting", async () => {
+    const t = convexTest(schema, modules);
+    const owner = t.withIdentity({ tokenIdentifier: "test|owner" });
+    const caseId = await owner.mutation(api.cases.createCase, {
+      title: "Research chain denial",
+      category: "medical_denial",
+    });
+    await t.run(async (ctx) => {
+      const now = Date.now();
+      await ctx.db.insert("sources", {
+        caseId,
+        ownerId: "test|owner",
+        kind: "document",
+        title: "Sample denial letter",
+        content: "We denied the requested outpatient MRI.",
+        excerpt: "We denied the requested outpatient MRI.",
+        retrievedAt: now,
+      });
+      await ctx.db.patch("cases", caseId, { status: "researching" });
+    });
+    await t.mutation(internal.workflowModel.beginResearch, {
+      caseId,
+      ownerId: "test|owner",
+      operationId: "firecrawl:policy:test",
+    });
+    const sourceIds = await t.mutation(internal.workflowModel.completeResearch, {
+      caseId,
+      ownerId: "test|owner",
+      operationId: "firecrawl:policy:test",
+      sources: [{
+        title: "Medicare MRI coverage",
+        url: "https://www.medicare.gov/coverage/magnetic-resonance-imaging-mri",
+        publisher: "medicare.gov",
+        content: "Medicare may cover MRI when medically necessary.",
+        excerpt: "Medicare may cover MRI when medically necessary.",
+        quotedText: "Medicare may cover MRI when medically necessary.",
+        relevanceNote: "Public coverage criteria for advanced imaging.",
+      }],
+    });
+
+    const detail = await owner.query(api.cases.getCase, { caseId });
+    expect(sourceIds).toHaveLength(1);
+    expect(detail?.case.status).toBe("drafting");
+    expect(detail?.sources.some((source) => source.kind === "policy")).toBe(true);
+  });
+
+  test("failResearch records the failure and still schedules drafting from document sources", async () => {
+    const t = convexTest(schema, modules);
+    const owner = t.withIdentity({ tokenIdentifier: "test|owner" });
+    const caseId = await owner.mutation(api.cases.createCase, {
+      title: "Research fallback denial",
+      category: "medical_denial",
+    });
+    await t.run(async (ctx) => {
+      const now = Date.now();
+      await ctx.db.insert("sources", {
+        caseId,
+        ownerId: "test|owner",
+        kind: "document",
+        title: "Sample denial letter",
+        content: "We denied the requested outpatient MRI.",
+        excerpt: "We denied the requested outpatient MRI.",
+        retrievedAt: now,
+      });
+      await ctx.db.patch("cases", caseId, { status: "researching" });
+    });
+    await t.mutation(internal.workflowModel.beginResearch, {
+      caseId,
+      ownerId: "test|owner",
+      operationId: "firecrawl:policy:fail",
+    });
+    await t.mutation(internal.workflowModel.failResearch, {
+      caseId,
+      ownerId: "test|owner",
+      operationId: "firecrawl:policy:fail",
+      error: "Firecrawl returned no scrapeable policy sources",
+    });
+
+    const detail = await owner.query(api.cases.getCase, { caseId });
+    expect(detail?.case.status).toBe("error");
+    expect(
+      detail?.audit.some(
+        (entry: Doc<"auditLog">) =>
+          entry.event === "external.firecrawl.policy_research" &&
+          entry.status === "failed",
+      ),
+    ).toBe(true);
   });
 });
 
