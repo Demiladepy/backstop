@@ -5,6 +5,7 @@ import {
   internalAction,
   internalMutation,
   internalQuery,
+  mutation,
   query,
 } from "./_generated/server";
 import schema from "./schema";
@@ -312,6 +313,95 @@ export const onMessageReceived = internalMutation({
       inboundBody: body,
     });
     return null;
+  },
+});
+
+/** Demo-only: inject a fictional payer reply without waiting on AgentMail. */
+export const simulateInboundReply = mutation({
+  args: { caseId: v.id("cases") },
+  returns: v.id("messages"),
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError("Authentication required");
+    }
+    const ownerId = identity.tokenIdentifier;
+    const caseRow = await ctx.db.get("cases", args.caseId);
+    if (!caseRow || caseRow.ownerId !== ownerId) {
+      throw new ConvexError("Case not found");
+    }
+    const messages = await ctx.db
+      .query("messages")
+      .withIndex("by_caseId", (q) => q.eq("caseId", args.caseId))
+      .take(20);
+    const outbound = messages.find((row) => row.direction === "outbound");
+    if (!outbound) {
+      throw new ConvexError(
+        "Approve and send an appeal before simulating a reply",
+      );
+    }
+
+    const now = Date.now();
+    const messageId = `demo-inbound:${args.caseId}:${now}`;
+    const existing = await ctx.db
+      .query("messages")
+      .withIndex("by_agentMailMessageId", (q) =>
+        q.eq("agentMailMessageId", messageId),
+      )
+      .unique();
+    if (existing) {
+      return existing._id;
+    }
+
+    const subject = `Re: ${outbound.subject ?? "your appeal"}`;
+    const body = [
+      "FICTIONAL DEMO REPLY — NOT A REAL PAYER MESSAGE",
+      "",
+      `Hello, we received appeal reference DEMO-4821 regarding ${caseRow.title}.`,
+      "We are reviewing the submitted clinical information and the cited policy language.",
+      "This automated demonstration reply does not approve or deny coverage.",
+      "",
+      `— ${caseRow.counterpartyName ?? "Demo Appeals Desk"}`,
+    ].join("\n");
+
+    const messageRowId = await ctx.db.insert("messages", {
+      caseId: caseRow._id,
+      ownerId,
+      direction: "inbound",
+      channel: "email",
+      status: "received",
+      subject,
+      body,
+      agentMailMessageId: messageId,
+      threadId: outbound.threadId ?? `demo-thread:${args.caseId}`,
+      from: caseRow.counterpartyEmail ?? "appeals@example.com",
+      to: caseRow.agentMailInboxEmail ?? outbound.from,
+      createdAt: now,
+      updatedAt: now,
+    });
+    await ctx.db.patch("cases", caseRow._id, {
+      status: "awaiting_reply",
+      updatedAt: now,
+    });
+    await ctx.db.insert("auditLog", {
+      caseId: caseRow._id,
+      ownerId,
+      actor: "user",
+      event: "demo.inbound_simulated",
+      operationId: `demo:inbound:${messageRowId}`,
+      status: "succeeded",
+      entityType: "message",
+      entityId: String(messageRowId),
+      detail: "Fictional inbound reply injected for the public demo.",
+      createdAt: now,
+    });
+    await ctx.scheduler.runAfter(0, internal.replyDraft.proposeFollowUp, {
+      caseId: caseRow._id,
+      ownerId,
+      inboundSubject: subject,
+      inboundBody: body,
+    });
+    return messageRowId;
   },
 });
 

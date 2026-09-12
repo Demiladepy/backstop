@@ -6,6 +6,7 @@ import { api } from '../convex/_generated/api'
 import type { Doc, Id } from '../convex/_generated/dataModel'
 import './App.css'
 import { AuthGate } from './AuthGate'
+import { BrandMark } from './BrandMark'
 
 type CaseTab = 'case' | 'evidence' | 'appeal' | 'email' | 'record' | 'watch'
 type DraftParagraph = Doc<'drafts'>['paragraphs'][number]
@@ -49,6 +50,9 @@ function formatDate(timestamp: number, includeTime = false) {
 }
 
 function Mark({ name }: { name: string }) {
+  if (name === 'B' || name === 'Backstop') {
+    return <BrandMark size={26} />
+  }
   return (
     <span className="mark" aria-hidden="true">
       {name.slice(0, 1).toUpperCase()}
@@ -159,55 +163,76 @@ function CaseBoard({
 
   return (
     <section className="board page-enter" aria-labelledby="board-title">
-      <div className="board-intro">
-        <p className="kicker">Your cases / live record</p>
-        <h1 id="board-title">
-          A clear next step,<br />
-          <em>without the noise.</em>
-        </h1>
-        <p>
-          Start with a sample denial. Backstop reads it, finds relevant policy
-          language, and prepares an appeal for your review.
-        </p>
-        <button className="primary-action" type="button" onClick={onNew}>
-          Start a sample case <span aria-hidden="true">↗</span>
-        </button>
-      </div>
-
-      <div className="board-register">
-        <div className="register-heading">
-          <span>Cases</span>
-          <span>{String(cases.length).padStart(2, '0')}</span>
-        </div>
-        {cases.length === 0 ? (
-          <div className="empty-register">
-            <span className="folio">00</span>
-            <h2>No case file yet.</h2>
-            <p>
-              Use a fictional denial letter so you can explore every step
-              without sharing sensitive information.
+      <div className="board-canvas">
+        <header className="board-toolbar">
+          <div>
+            <p className="kicker">Your workspace</p>
+            <h1 id="board-title">A clear next step.</h1>
+            <p className="board-lede">
+              Open a sample denial case. Everything after that stays on this board.
             </p>
           </div>
-        ) : (
-          <ol className="case-list">
-            {cases.map((item, index) => (
-              <li key={item._id}>
-                <button type="button" onClick={() => onSelect(item._id)}>
-                  <span className="case-index">{String(index + 1).padStart(2, '0')}</span>
-                  <span className="case-title">
-                    <strong>{item.title}</strong>
-                    <small>{item.counterpartyName ?? 'Payer not named'}</small>
-                  </span>
-                  <span className={`status-signal status-${item.status}`}>
-                    {statusCopy[item.status]}
-                  </span>
-                  <span className="case-date">{formatDate(item.updatedAt)}</span>
-                  <span className="arrow" aria-hidden="true">→</span>
-                </button>
-              </li>
-            ))}
-          </ol>
-        )}
+          <button
+            className="primary-action"
+            type="button"
+            onClick={onNew}
+            onPointerMove={(event) => {
+              const rect = event.currentTarget.getBoundingClientRect()
+              event.currentTarget.style.setProperty(
+                '--mx',
+                `${((event.clientX - rect.left) / rect.width) * 100}%`,
+              )
+              event.currentTarget.style.setProperty(
+                '--my',
+                `${((event.clientY - rect.top) / rect.height) * 100}%`,
+              )
+            }}
+          >
+            <span className="btn-shine" aria-hidden="true" />
+            Start a sample case
+          </button>
+        </header>
+
+        <div className="board-register">
+          <div className="register-heading">
+            <span>Cases</span>
+            <span>{String(cases.length).padStart(2, '0')}</span>
+          </div>
+          {cases.length === 0 ? (
+            <div className="empty-register">
+              <div className="empty-visual" aria-hidden="true">
+                <BrandMark size={42} />
+              </div>
+              <h2>No case file yet</h2>
+              <p>
+                Start with a fictional denial. Backstop reads it, finds policy
+                language, and prepares an appeal for your review.
+              </p>
+              <button className="secondary-action" type="button" onClick={onNew}>
+                Create your first case
+              </button>
+            </div>
+          ) : (
+            <ol className="case-list">
+              {cases.map((item, index) => (
+                <li key={item._id}>
+                  <button type="button" onClick={() => onSelect(item._id)}>
+                    <span className="case-index">{String(index + 1).padStart(2, '0')}</span>
+                    <span className="case-title">
+                      <strong>{item.title}</strong>
+                      <small>{item.counterpartyName ?? 'Payer not named'}</small>
+                    </span>
+                    <span className={`status-signal status-${item.status}`}>
+                      {statusCopy[item.status]}
+                    </span>
+                    <span className="case-date">{formatDate(item.updatedAt)}</span>
+                    <span className="arrow" aria-hidden="true">→</span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
       </div>
     </section>
   )
@@ -216,14 +241,17 @@ function CaseBoard({
 function BoardSkeleton() {
   return (
     <section className="board board-loading" aria-live="polite" aria-label="Loading cases">
-      <div className="board-intro">
-        <span className="skeleton short" />
-        <span className="skeleton headline" />
-        <span className="skeleton body" />
-      </div>
-      <div className="board-register">
-        <div className="register-heading"><span>Opening your record…</span></div>
-        {[1, 2, 3].map((item) => <span className="skeleton row" key={item} />)}
+      <div className="board-canvas">
+        <div className="board-toolbar">
+          <div>
+            <span className="skeleton short" />
+            <span className="skeleton headline" />
+            <span className="skeleton body" />
+          </div>
+        </div>
+        <div className="board-register">
+          {[1, 2, 3].map((item) => <span className="skeleton row" key={item} />)}
+        </div>
       </div>
     </section>
   )
@@ -237,10 +265,15 @@ function Intake({
   onCreated: (id: Id<'cases'>) => void
 }) {
   const createCase = useMutation(api.cases.createCase)
+  const seedSampleDenial = useAction(api.sampleDenial.seedSampleDenial)
   const [title, setTitle] = useState('Sample denial — outpatient MRI')
   const [payer, setPayer] = useState('Aetna (fictional demo)')
   const [email, setEmail] = useState('appeals@example.com')
-  const [deadline, setDeadline] = useState('')
+  const [deadline, setDeadline] = useState(() => {
+    const day = new Date()
+    day.setDate(day.getDate() + 14)
+    return day.toISOString().slice(0, 10)
+  })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -260,6 +293,7 @@ function Intake({
         counterpartyEmail: email,
         deadlineAt: deadline ? new Date(`${deadline}T12:00:00`).getTime() : undefined,
       })
+      await seedSampleDenial({ caseId })
       onCreated(caseId)
     } catch (caught) {
       setError(readableError(caught))
@@ -270,81 +304,95 @@ function Intake({
 
   return (
     <section className="intake page-enter" aria-labelledby="intake-title">
-      <div className="intake-note">
-        <button className="back-button" type="button" onClick={onCancel}>← Case board</button>
-        <p className="kicker">New case / medical denial</p>
-        <h1 id="intake-title">Begin with the envelope.</h1>
-        <p className="intake-lede">
-          Tell us who issued the denial. You will add the sample letter next.
-        </p>
-        <div className="safety-note">
-          <span>Demo boundary</span>
-          <p>
-            Backstop is not HIPAA compliant. Use only fictional or fully
-            de-identified sample files. We will never ask for an insurer login.
-          </p>
+      <div className="intake-shell">
+        <button className="back-button" type="button" onClick={onCancel}>← Cases</button>
+
+        <div className="intake-card">
+          <header className="intake-card-head">
+            <p className="kicker">New case</p>
+            <h1 id="intake-title">Begin with the envelope.</h1>
+            <p className="intake-lede">
+              Who issued the denial? Opening the case attaches the fictional
+              sample letter and starts parse → research → draft automatically.
+              You still approve before anything is sent.
+            </p>
+          </header>
+
+          <form className="intake-form" onSubmit={(event) => void submit(event)}>
+            <label>
+              <span>Case title</span>
+              <input
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                minLength={3}
+                maxLength={160}
+                required
+              />
+              <small>Use a recognizable label. Never a real patient name.</small>
+            </label>
+            <div className="field-pair">
+              <label>
+                <span>Payer name</span>
+                <input
+                  value={payer}
+                  onChange={(event) => setPayer(event.target.value)}
+                  maxLength={160}
+                  required
+                />
+              </label>
+              <label>
+                <span>Appeal email</span>
+                <input
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  type="email"
+                  required
+                />
+              </label>
+            </div>
+            <label className="deadline-field">
+              <span>Deadline <i>optional</i></span>
+              <input
+                value={deadline}
+                onChange={(event) => setDeadline(event.target.value)}
+                type="date"
+              />
+            </label>
+            <div className="fixed-category">
+              <span>Case type</span>
+              <strong>Medical denial</strong>
+            </div>
+            {error && <p className="form-error" role="alert">{error}</p>}
+            <div className="form-actions">
+              <button
+                className="primary-action"
+                type="submit"
+                disabled={busy}
+                onPointerMove={(event) => {
+                  const rect = event.currentTarget.getBoundingClientRect()
+                  event.currentTarget.style.setProperty(
+                    '--mx',
+                    `${((event.clientX - rect.left) / rect.width) * 100}%`,
+                  )
+                  event.currentTarget.style.setProperty(
+                    '--my',
+                    `${((event.clientY - rect.top) / rect.height) * 100}%`,
+                  )
+                }}
+              >
+                <span className="btn-shine" aria-hidden="true" />
+                {busy ? 'Seeding sample letter…' : 'Open case file'}
+              </button>
+              <button className="text-button" type="button" onClick={onCancel}>
+                Cancel
+              </button>
+            </div>
+            <p className="field-help">
+              Demo only. Not HIPAA compliant. Fictional or de-identified files only.
+            </p>
+          </form>
         </div>
       </div>
-
-      <form className="intake-form" onSubmit={(event) => void submit(event)}>
-        <div className="form-folio">
-          <span>New case</span>
-          <span>Required *</span>
-        </div>
-        <label>
-          <span>Case title *</span>
-          <input
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            minLength={3}
-            maxLength={160}
-            required
-          />
-          <small>Keep it recognizable; do not use a real patient name.</small>
-        </label>
-        <div className="field-pair">
-          <label>
-            <span>Payer name *</span>
-            <input
-              value={payer}
-              onChange={(event) => setPayer(event.target.value)}
-              maxLength={160}
-              required
-            />
-          </label>
-          <label>
-            <span>Appeal email *</span>
-            <input
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              type="email"
-              required
-            />
-          </label>
-        </div>
-        <label className="deadline-field">
-          <span>Deadline <i>optional</i></span>
-          <input
-            value={deadline}
-            onChange={(event) => setDeadline(event.target.value)}
-            type="date"
-          />
-        </label>
-        <div className="fixed-category">
-          <span>Case type</span>
-          <strong>Medical denial</strong>
-          <small>Backstop currently supports this case type only.</small>
-        </div>
-        {error && <p className="form-error" role="alert">{error}</p>}
-        <div className="form-actions">
-          <button className="primary-action" type="submit" disabled={busy}>
-            {busy ? 'Opening case…' : 'Open case file'}
-          </button>
-          <button className="text-button" type="button" onClick={onCancel}>
-            Keep case board
-          </button>
-        </div>
-      </form>
     </section>
   )
 }
@@ -499,17 +547,14 @@ function CaseOverview({
         </div>
         <h3>{detail.case.title}</h3>
         <p className="sheet-deck">
-          Appeal record prepared for {detail.case.counterpartyName ?? 'the payer'}.
+          Prepared for {detail.case.counterpartyName ?? 'the payer'}.
         </p>
         <dl className="sheet-facts">
           <div><dt>Documents</dt><dd>{detail.documents.length}</dd></div>
-          <div><dt>Policy sources</dt><dd>{detail.sources.filter((source) => source.kind === 'policy').length}</dd></div>
-          <div><dt>Cited paragraphs</dt><dd>{latestDraft?.paragraphs.filter((p) => p.verification === 'cited').length ?? 0}</dd></div>
-          <div><dt>External messages</dt><dd>{detail.messages.length}</dd></div>
+          <div><dt>Sources</dt><dd>{detail.sources.filter((source) => source.kind === 'policy').length}</dd></div>
+          <div><dt>Cited</dt><dd>{latestDraft?.paragraphs.filter((p) => p.verification === 'cited').length ?? 0}</dd></div>
+          <div><dt>Messages</dt><dd>{detail.messages.length}</dd></div>
         </dl>
-        <p className="sheet-positioning">
-          Drafts and sends the appeals you approve — not legal or medical advice.
-        </p>
       </section>
       <section className="recent-record">
         <div className="section-heading">
@@ -563,11 +608,13 @@ function EvidenceView({
 }) {
   const generateUploadUrl = useMutation(api.cases.generateUploadUrl)
   const attachDocument = useMutation(api.cases.attachDocument)
+  const seedSampleDenial = useAction(api.sampleDenial.seedSampleDenial)
   const findPolicy = useAction(api.findPolicy.findPolicy)
   const fileInput = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [researching, setResearching] = useState(false)
+  const [seeding, setSeeding] = useState(false)
   const [focus, setFocus] = useState('')
   const [error, setError] = useState('')
 
@@ -585,6 +632,18 @@ function EvidenceView({
     } finally {
       setUploading(false)
       if (fileInput.current) fileInput.current.value = ''
+    }
+  }
+
+  const seedDemo = async () => {
+    setError('')
+    setSeeding(true)
+    try {
+      await seedSampleDenial({ caseId: detail.case._id })
+    } catch (caught) {
+      setError(readableError(caught))
+    } finally {
+      setSeeding(false)
     }
   }
 
@@ -636,18 +695,33 @@ function EvidenceView({
         )}
         {detail.documents.length === 0 ? (
           <>
-            <button className="document-drop" type="button" onClick={() => fileInput.current?.click()}>
+            <button
+              className="document-drop"
+              type="button"
+              onClick={() => void seedDemo()}
+              disabled={seeding || uploading}
+            >
               <span className="document-corner" />
-              <strong>Place the denial letter here.</strong>
-              <small>Choose a fake or de-identified sample · 25 MB maximum</small>
-              <span>PDF / DOCX / TXT / HTML / CSV</span>
+              <strong>
+                {seeding ? 'Attaching the demo letter…' : 'Use the fictional demo letter'}
+              </strong>
+              <small>Attaches sample-denial.html and starts parse → research → draft</small>
+              <span>One click · no real PHI</span>
+            </button>
+            <button
+              className="secondary-action"
+              type="button"
+              onClick={() => fileInput.current?.click()}
+              disabled={uploading || seeding}
+            >
+              Or upload a different sample file
             </button>
             <a
               className="sample-download"
               href="/samples/sample-denial.html"
               download="backstop-fictional-denial.html"
             >
-              Download the fictional demo letter ↘
+              Preview the fictional demo letter ↘
             </a>
           </>
         ) : (
@@ -805,14 +879,30 @@ function AppealView({
   }
 
   if (!latest || latest.status === 'rejected') {
+    const pipelineBusy =
+      detail.case.status === 'parsing' ||
+      detail.case.status === 'researching' ||
+      detail.case.status === 'drafting'
     return (
       <div className="draft-empty">
         <div>
           <p className="kicker">Appeal desk / grounded generation</p>
-          <h2>{latest?.status === 'rejected' ? 'Prepare a considered revision.' : 'Turn evidence into an argument.'}</h2>
+          <h2>
+            {latest?.status === 'rejected'
+              ? 'Prepare a considered revision.'
+              : pipelineBusy
+                ? 'Working through the evidence…'
+                : 'Turn evidence into an argument.'}
+          </h2>
           <p>
-            The draft will use only sources in this case. Any unsupported paragraph
-            is labeled <strong>[UNVERIFIED]</strong> before you see it.
+            {pipelineBusy
+              ? 'Parse, policy research, and drafting run automatically after the sample letter attaches. Stay on Evidence or wait here — approve remains the only send gate.'
+              : (
+                <>
+                  The draft will use only sources in this case. Any unsupported paragraph
+                  is labeled <strong>[UNVERIFIED]</strong> before you see it.
+                </>
+              )}
           </p>
         </div>
         <div className="draft-instructions">
@@ -999,7 +1089,25 @@ function EmailView({
   detail: { case: Doc<'cases'>; messages: Doc<'messages'>[] }
   thread: unknown[] | undefined
 }) {
+  const simulateInboundReply = useMutation(api.email.simulateInboundReply)
+  const [simulating, setSimulating] = useState(false)
+  const [error, setError] = useState('')
   const messages = [...detail.messages].sort((a, b) => a.createdAt - b.createdAt)
+  const hasOutbound = messages.some((message) => message.direction === 'outbound')
+  const hasInbound = messages.some((message) => message.direction === 'inbound')
+
+  const simulate = async () => {
+    setError('')
+    setSimulating(true)
+    try {
+      await simulateInboundReply({ caseId: detail.case._id })
+    } catch (caught) {
+      setError(readableError(caught))
+    } finally {
+      setSimulating(false)
+    }
+  }
+
   return (
     <div className="email-layout">
       <header className="thread-header">
@@ -1039,6 +1147,22 @@ function EmailView({
           ))}
         </div>
       )}
+      {hasOutbound && !hasInbound && (
+        <div className="review-actions">
+          <button
+            className="secondary-action"
+            type="button"
+            disabled={simulating}
+            onClick={() => void simulate()}
+          >
+            {simulating ? 'Injecting fictional reply…' : 'Simulate fictional payer reply'}
+          </button>
+          <p className="field-help">
+            Demo helper only. Creates a fake inbound message and drafts a follow-up for your approval.
+          </p>
+        </div>
+      )}
+      {error && <p className="form-error" role="alert">{error}</p>}
       {thread === undefined && detail.case.agentMailInboxId && (
         <p className="thread-sync" aria-live="polite">Checking the verified inbox…</p>
       )}
@@ -1055,10 +1179,13 @@ function WatchView({
     drafts: Doc<'drafts'>[]
   }
 }) {
+  const ensureDemoDeadline = useMutation(api.cases.ensureDemoDeadline)
   const watchDeadline = useAction(api.depth.watchDeadline)
   const watchPolicy = useAction(api.depth.watchPolicy)
   const fillPublicForm = useAction(api.depth.fillPublicForm)
-  const [policyUrl, setPolicyUrl] = useState('')
+  const [policyUrl, setPolicyUrl] = useState(
+    'https://www.medicare.gov/claims-appeals/file-an-appeal',
+  )
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
   const formDrafts = detail.drafts.filter((draft) => draft.kind === 'form_submission')
@@ -1075,6 +1202,17 @@ function WatchView({
     }
   }
 
+  const runDemoWatchBeat = async () => {
+    await run('demo', async () => {
+      await ensureDemoDeadline({ caseId: detail.case._id })
+      await watchDeadline({ caseId: detail.case._id })
+      await fillPublicForm({
+        caseId: detail.case._id,
+        formUrl: policyUrl || undefined,
+      })
+    })
+  }
+
   return (
     <div className="overview-grid">
       <section className="next-step">
@@ -1088,17 +1226,29 @@ function WatchView({
           <button
             className="primary-action"
             type="button"
-            disabled={Boolean(busy) || !detail.case.deadlineAt}
-            onClick={() => void run('deadline', () => watchDeadline({ caseId: detail.case._id }))}
+            disabled={Boolean(busy)}
+            onClick={() => void runDemoWatchBeat()}
+          >
+            {busy === 'demo'
+              ? 'Running demo Watch beat…'
+              : 'Run demo Watch beat'}
+          </button>
+          <button
+            className="secondary-action"
+            type="button"
+            disabled={Boolean(busy)}
+            onClick={() =>
+              void run('deadline', async () => {
+                await ensureDemoDeadline({ caseId: detail.case._id })
+                await watchDeadline({ caseId: detail.case._id })
+              })
+            }
           >
             {busy === 'deadline' ? 'Arming deadline watch…' : 'Watch this deadline'}
           </button>
-          {!detail.case.deadlineAt && (
-            <p className="field-help">Add a deadline on intake to enable this watch.</p>
-          )}
         </div>
         <label>
-          <span>Public policy URL</span>
+          <span>Public policy / form URL</span>
           <input
             value={policyUrl}
             onChange={(event) => setPolicyUrl(event.target.value)}
@@ -1128,7 +1278,14 @@ function WatchView({
           className="approve-action"
           type="button"
           disabled={Boolean(busy)}
-          onClick={() => void run('form', () => fillPublicForm({ caseId: detail.case._id }))}
+          onClick={() =>
+            void run('form', () =>
+              fillPublicForm({
+                caseId: detail.case._id,
+                formUrl: policyUrl || undefined,
+              }),
+            )
+          }
         >
           {busy === 'form' ? 'Filling public form…' : 'Prepare public form'}
         </button>

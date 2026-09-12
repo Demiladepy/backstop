@@ -190,6 +190,41 @@ export const generateUploadUrl = mutation({
   },
 });
 
+/** Demo helper: set a near-term appeals deadline when intake left it blank. */
+export const ensureDemoDeadline = mutation({
+  args: { caseId: v.id("cases") },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    const ownerId = await requireOwner(ctx);
+    const caseRow = await ctx.db.get("cases", args.caseId);
+    if (!caseRow || caseRow.ownerId !== ownerId) {
+      throw new ConvexError("Case not found");
+    }
+    if (caseRow.deadlineAt) {
+      return caseRow.deadlineAt;
+    }
+    const deadlineAt = Date.now() + 14 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    await ctx.db.patch("cases", caseRow._id, {
+      deadlineAt,
+      updatedAt: now,
+    });
+    await ctx.db.insert("auditLog", {
+      caseId: caseRow._id,
+      ownerId,
+      actor: "user",
+      event: "demo.deadline_set",
+      operationId: `demo:deadline:${caseRow._id}`,
+      status: "succeeded",
+      entityType: "case",
+      entityId: caseRow._id,
+      detail: "Demo appeals deadline set 14 days out.",
+      createdAt: now,
+    });
+    return deadlineAt;
+  },
+});
+
 export const attachDocument = mutation({
   args: {
     caseId: v.id("cases"),

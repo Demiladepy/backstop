@@ -131,20 +131,43 @@ export type FirecrawlSearchResult = {
   url: string;
   title: string;
   description: string;
+  markdown?: string;
 };
 
-export async function searchWithFirecrawl(query: string) {
+export type FirecrawlSearchOptions = {
+  limit?: number;
+  includeDomains?: string[];
+  scrapeMarkdown?: boolean;
+};
+
+export async function searchWithFirecrawl(
+  query: string,
+  options: FirecrawlSearchOptions = {},
+) {
+  const limit = Math.min(Math.max(options.limit ?? 5, 1), 10);
+  const body: Record<string, unknown> = {
+    query: query.slice(0, 500),
+    limit,
+    sources: [{ type: "web" }],
+    location: "United States",
+  };
+  if (options.includeDomains?.length) {
+    body.includeDomains = options.includeDomains.slice(0, 10);
+  }
+  if (options.scrapeMarkdown) {
+    body.scrapeOptions = {
+      formats: ["markdown"],
+      onlyMainContent: true,
+      timeout: 45_000,
+    };
+  }
   const response = await fetch(`${FIRECRAWL_BASE_URL}/search`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${firecrawlKey()}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      query,
-      limit: 5,
-      sources: [{ type: "web" }],
-    }),
+    body: JSON.stringify(body),
   });
   const payload = object(await readResponse("Firecrawl", response));
   const data = payload?.data;
@@ -167,6 +190,10 @@ export async function searchWithFirecrawl(query: string) {
       title: typeof row.title === "string" ? row.title : row.url,
       description:
         typeof row.description === "string" ? row.description : "",
+      markdown:
+        typeof row.markdown === "string" && row.markdown.trim()
+          ? row.markdown
+          : undefined,
     });
   }
   if (results.length === 0) {

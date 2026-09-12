@@ -1,4 +1,5 @@
 import { ConvexError, v } from "convex/values";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, internalQuery } from "./_generated/server";
 import schema, { draftParagraph } from "./schema";
@@ -192,6 +193,12 @@ export const completeParse = internalMutation({
       detail: "Firecrawl parse persisted as a document source.",
       createdAt: now,
     });
+    if (parsingDocuments.length === 0) {
+      await ctx.scheduler.runAfter(0, internal.findPolicy.runFindPolicy, {
+        caseId: document.caseId,
+        ownerId: args.ownerId,
+      });
+    }
     return sourceId;
   },
 });
@@ -350,6 +357,10 @@ export const completeResearch = internalMutation({
       detail: `Persisted ${sourceIds.length} scraped policy sources.`,
       createdAt: now,
     });
+    await ctx.scheduler.runAfter(0, internal.draftAppeal.runDraftAppeal, {
+      caseId: args.caseId,
+      ownerId: args.ownerId,
+    });
     return sourceIds;
   },
 });
@@ -384,6 +395,18 @@ export const failResearch = internalMutation({
       detail: args.error,
       createdAt: now,
     });
+    const documentSource = await ctx.db
+      .query("sources")
+      .withIndex("by_caseId_and_kind", (q) =>
+        q.eq("caseId", args.caseId).eq("kind", "document"),
+      )
+      .first();
+    if (documentSource) {
+      await ctx.scheduler.runAfter(0, internal.draftAppeal.runDraftAppeal, {
+        caseId: args.caseId,
+        ownerId: args.ownerId,
+      });
+    }
     return null;
   },
 });

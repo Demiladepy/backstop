@@ -15,8 +15,8 @@ action is audited.
 - Convex: reactive backend, file storage, actions, audit log, scheduling, and
   static hosting
 - OpenAI: clause extraction, grounded drafting, and reply understanding
-- Firecrawl: parse, search, and scrape in the core; monitor and public-form
-  interaction remain behind the depth release gate
+- Firecrawl: parse, search, scrape, monitor, and public-form interact (stops
+  before submit; credential fields abort)
 - AgentMail: dedicated inbox, outbound delivery, inbound webhook, and threading
 - React and TypeScript: live case board and approval interface
 
@@ -42,18 +42,21 @@ action is audited.
 - Added OpenAI Responses API structured drafting with paragraph-level source
   validation and visible `[UNVERIFIED]` fallback labels.
 - Enforced medical denial as the only creatable v1 case type.
+- Auto-seeds the fictional sample denial on case open and chains
+  parse → research → draft without manual clicks.
 
 ### P4–P5 — Approval, email, audit, and product
 
 - Installed the official `@agentmail/convex` component for durable sends,
   verified inbound webhooks, local thread state, and reactive inbox data.
 - Made approval idempotent and the sole path that schedules an email send.
-- Added newly gated follow-up drafts for inbound replies; replies never trigger
-  an automatic send.
+- Added gated follow-up drafts for inbound replies; replies never trigger an
+  automatic send.
+- Added a demo-only simulate-inbound helper for a reliable reply beat.
 - Built the complete editorial intake, live board, evidence register, cited
   appeal review, correspondence, and append-only record UI.
-- Added nine adversarial backend tests and two passing Chromium flows covering
-  authentication, case creation, keyboard focus, and mobile overflow.
+- Backend Vitest suite and Chromium e2e cover entrance, case create, sample
+  seed visibility, keyboard focus, and mobile overflow.
 
 ### P6 — Depth
 
@@ -62,11 +65,12 @@ action is audited.
 - Added Firecrawl `/interact` public-form fill that stops before submit,
   aborts on credential fields, and records a deterministic fallback draft.
 - Form-submission drafts require human approval and never send email.
+- Watch tab includes a one-click **Run demo Watch beat** (deadline + form).
 
 ### Current release gate
 
-- Local lint, build, backend tests, and browser tests are the release checks.
-- Real sponsor API smoke tests need Firecrawl, OpenAI, and AgentMail env vars.
+- Local: `npm run lint`, `npm run build`, `npm test`, `npm run test:e2e`
+- Sponsor keys on both dev and prod Convex deployments
 - Live app: https://festive-roadrunner-713.convex.site
 - Public repository: https://github.com/Demiladepy/backstop
 
@@ -74,7 +78,8 @@ action is audited.
 
 - Live app: https://festive-roadrunner-713.convex.site
 - Public repository: https://github.com/Demiladepy/backstop
-- Demo video: TODO — verify before replacing
+- Demo video: TODO — record from `DEMO.md` (under 3 minutes)
+- Submit on vibeapps.dev before Sep 22, 2026, 12:00 PM PT
 
 ## Demo safety
 

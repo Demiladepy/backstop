@@ -1,7 +1,11 @@
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { action } from "./_generated/server";
+import {
+  action,
+  internalAction,
+  type ActionCtx,
+} from "./_generated/server";
 import { createStructuredResponse, safeExternalError } from "./externalApi";
 
 type DraftOutput = {
@@ -75,6 +79,105 @@ function parseDraftOutput(text: string): DraftOutput {
   return { subject: record.subject, paragraphs };
 }
 
+async function runDraft(
+  ctx: ActionCtx,
+  caseId: Id<"cases">,
+  ownerId: string,
+  instructions?: string,
+): Promise<Id<"drafts">> {
+  const context: {
+    case: Doc<"cases">;
+    sources: Doc<"sources">[];
+  } | null = await ctx.runQuery(internal.workflowModel.getCaseContext, {
+    caseId,
+    ownerId,
+  });
+  if (!context) {
+    throw new ConvexError("Case not found");
+  }
+  const trimmed = instructions?.trim();
+  if (trimmed && trimmed.length > 2_000) {
+    throw new ConvexError("instructions must be at most 2,000 characters");
+  }
+  if (context.sources.length === 0) {
+    throw new ConvexError("At least one parsed or researched source is required");
+  }
+
+  const operationId = `openai:draft:${caseId}:${crypto.randomUUID()}`;
+  await ctx.runMutation(internal.workflowModel.beginDraft, {
+    caseId,
+    ownerId,
+    operationId,
+  });
+
+  try {
+    const sourceInput = context.sources.map((source) => ({
+      id: source._id,
+      title: source.title,
+      url: source.url ?? null,
+      excerpt: source.content.slice(0, 8_000),
+    }));
+    const outputText = await createStructuredResponse(
+      [
+        {
+          role: "system",
+          content:
+            "Draft a calm medical insurance appeal for human review. This is not legal or medical advice. Every factual paragraph must cite one or more exact source IDs supplied by the user. Never invent an ID. If a paragraph cannot be supported, return an empty sourceIds array; it will be visibly marked unverified. Do not claim the appeal has been sent.",
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            case: {
+              title: context.case.title,
+              category: context.case.category,
+            },
+            instructions: trimmed ?? null,
+            sources: sourceInput,
+          }),
+        },
+      ],
+      responseSchema,
+    );
+    const output = parseDraftOutput(outputText);
+    const sourceIds = new Set(context.sources.map((source) => source._id));
+    const paragraphs = output.paragraphs.map((paragraph) => {
+      const validIds = paragraph.sourceIds.filter(
+        (id): id is Id<"sources"> => sourceIds.has(id as Id<"sources">),
+      );
+      const allValid =
+        validIds.length > 0 &&
+        validIds.length === paragraph.sourceIds.length;
+      return allValid
+        ? {
+            text: paragraph.text,
+            sourceIds: validIds,
+            verification: "cited" as const,
+          }
+        : {
+            text: `[UNVERIFIED] ${paragraph.text}`,
+            sourceIds: [] as Id<"sources">[],
+            verification: "unverified" as const,
+          };
+    });
+    return await ctx.runMutation(internal.workflowModel.completeDraft, {
+      caseId,
+      ownerId,
+      operationId,
+      subject: output.subject,
+      paragraphs,
+    });
+  } catch (error) {
+    const message = safeExternalError(error);
+    await ctx.runMutation(internal.workflowModel.failDraft, {
+      caseId,
+      ownerId,
+      operationId,
+      error: message,
+    });
+    throw new ConvexError(message);
+  }
+}
+
 export const draftAppeal = action({
   args: {
     caseId: v.id("cases"),
@@ -86,98 +189,32 @@ export const draftAppeal = action({
     if (!identity) {
       throw new ConvexError("Authentication required");
     }
-    const ownerId = identity.tokenIdentifier;
-    const context: {
-      case: Doc<"cases">;
-      sources: Doc<"sources">[];
-    } | null = await ctx.runQuery(internal.workflowModel.getCaseContext, {
-      caseId: args.caseId,
-      ownerId,
-    });
-    if (!context) {
-      throw new ConvexError("Case not found");
-    }
-    const instructions = args.instructions?.trim();
-    if (instructions && instructions.length > 2_000) {
-      throw new ConvexError("instructions must be at most 2,000 characters");
-    }
-    if (context.sources.length === 0) {
-      throw new ConvexError("At least one parsed or researched source is required");
-    }
+    return await runDraft(
+      ctx,
+      args.caseId,
+      identity.tokenIdentifier,
+      args.instructions,
+    );
+  },
+});
 
-    const operationId = `openai:draft:${args.caseId}:${crypto.randomUUID()}`;
-    await ctx.runMutation(internal.workflowModel.beginDraft, {
-      caseId: args.caseId,
-      ownerId,
-      operationId,
-    });
-
+export const runDraftAppeal = internalAction({
+  args: {
+    caseId: v.id("cases"),
+    ownerId: v.string(),
+    instructions: v.optional(v.string()),
+  },
+  returns: v.union(v.id("drafts"), v.null()),
+  handler: async (ctx, args) => {
     try {
-      const sourceInput = context.sources.map((source) => ({
-        id: source._id,
-        title: source.title,
-        url: source.url ?? null,
-        excerpt: source.content.slice(0, 8_000),
-      }));
-      const outputText = await createStructuredResponse(
-        [
-          {
-            role: "system",
-            content:
-              "Draft a calm medical insurance appeal for human review. This is not legal or medical advice. Every factual paragraph must cite one or more exact source IDs supplied by the user. Never invent an ID. If a paragraph cannot be supported, return an empty sourceIds array; it will be visibly marked unverified. Do not claim the appeal has been sent.",
-          },
-          {
-            role: "user",
-            content: JSON.stringify({
-              case: {
-                title: context.case.title,
-                category: context.case.category,
-              },
-              instructions: instructions ?? null,
-              sources: sourceInput,
-            }),
-          },
-        ],
-        responseSchema,
+      return await runDraft(
+        ctx,
+        args.caseId,
+        args.ownerId,
+        args.instructions,
       );
-      const output = parseDraftOutput(outputText);
-      const sourceIds = new Set(context.sources.map((source) => source._id));
-      const paragraphs = output.paragraphs.map((paragraph) => {
-        const validIds = paragraph.sourceIds.filter(
-          (id): id is Id<"sources"> =>
-            sourceIds.has(id as Id<"sources">),
-        );
-        const allValid =
-          validIds.length > 0 &&
-          validIds.length === paragraph.sourceIds.length;
-        return allValid
-          ? {
-              text: paragraph.text,
-              sourceIds: validIds,
-              verification: "cited" as const,
-            }
-          : {
-              text: `[UNVERIFIED] ${paragraph.text}`,
-              sourceIds: [] as Id<"sources">[],
-              verification: "unverified" as const,
-            };
-      });
-      return await ctx.runMutation(internal.workflowModel.completeDraft, {
-        caseId: args.caseId,
-        ownerId,
-        operationId,
-        subject: output.subject,
-        paragraphs,
-      });
-    } catch (error) {
-      const message = safeExternalError(error);
-      await ctx.runMutation(internal.workflowModel.failDraft, {
-        caseId: args.caseId,
-        ownerId,
-        operationId,
-        error: message,
-      });
-      throw new ConvexError(message);
+    } catch {
+      return null;
     }
   },
 });

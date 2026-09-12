@@ -19,6 +19,8 @@ import type * as findPolicy from "../findPolicy.js";
 import type * as http from "../http.js";
 import type * as parseDocument from "../parseDocument.js";
 import type * as replyDraft from "../replyDraft.js";
+import type * as researchHelpers from "../researchHelpers.js";
+import type * as sampleDenial from "../sampleDenial.js";
 import type * as workflowModel from "../workflowModel.js";
 
 import type {
@@ -39,6 +41,8 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   parseDocument: typeof parseDocument;
   replyDraft: typeof replyDraft;
+  researchHelpers: typeof researchHelpers;
+  sampleDenial: typeof sampleDenial;
   workflowModel: typeof workflowModel;
 }>;
 

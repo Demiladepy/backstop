@@ -14,9 +14,9 @@
   --signal-ink: oklch(0.22 0.06 112);
   --danger: oklch(0.50 0.16 25);
   --success: oklch(0.46 0.11 155);
-  --display: 'Bricolage Grotesque', 'Segoe UI', sans-serif;
+  --display: 'Literata', Georgia, serif;
   --reading: 'Source Serif 4', Georgia, serif;
-  --body: 'Source Sans 3', 'Segoe UI', sans-serif;
+  --body: 'Onest', 'Segoe UI', sans-serif;
   --radius: 14px;
   --radius-sm: 10px;
   --shadow: 0 1px 1px oklch(0.18 0.018 264 / 0.04), 0 16px 40px oklch(0.18 0.018 264 / 0.07);
