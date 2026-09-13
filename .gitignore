@@ -34,3 +34,9 @@ test-results
 # Local tool caches
 .firecrawl/
 
+
+# Auth key temp files
+.auth-keys.json
+.jwt-private-key.txt
+.jwks.txt
+.site-url.txt
