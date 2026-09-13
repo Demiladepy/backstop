@@ -1,6 +1,7 @@
 # Demo script (under 3 minutes)
 
-Live app: https://festive-roadrunner-713.convex.site
+Live app: https://backstop-xi.vercel.app
+(Convex mirror: https://festive-roadrunner-713.convex.site)
 
 Positioning line, said once:
 

@@ -71,12 +71,13 @@ action is audited.
 
 - Local: `npm run lint`, `npm run build`, `npm test`, `npm run test:e2e`
 - Sponsor keys on both dev and prod Convex deployments
-- Live app: https://festive-roadrunner-713.convex.site
+- Live app: https://backstop-xi.vercel.app
+- Convex static host: https://festive-roadrunner-713.convex.site
 - Public repository: https://github.com/Demiladepy/backstop
 
 ## Submission links
 
-- Live app: https://festive-roadrunner-713.convex.site
+- Live app: https://backstop-xi.vercel.app
 - Public repository: https://github.com/Demiladepy/backstop
 - Demo video: TODO — record from `DEMO.md` (under 3 minutes)
 - Submit on vibeapps.dev before Sep 22, 2026, 12:00 PM PT

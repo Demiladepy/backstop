@@ -99,9 +99,15 @@ export function AuthGate({ children }: { children: ReactNode }) {
     setSigningIn(true)
     try {
       await signIn('anonymous')
-    } catch {
+    } catch (caught) {
+      const detail =
+        caught instanceof Error
+          ? caught.message.replace(/^Uncaught (ConvexError: )?/, '').slice(0, 220)
+          : ''
       setError(
-        'The private demo could not open. Please try again after the development service is available.',
+        detail
+          ? `Could not open the private demo: ${detail}`
+          : 'The private demo could not open. Please try again in a moment.',
       )
     } finally {
       setSigningIn(false)

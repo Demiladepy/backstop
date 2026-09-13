@@ -3437,46 +3437,143 @@ dd {
 
 @media (max-width: 560px) {
   :root { --page-gutter: var(--space-md); }
-  .product-header { min-height: 64px; }
+
+  html,
+  body,
+  .product-shell,
+  .landing {
+    overflow-x: clip;
+    max-width: 100%;
+  }
+
+  .product-header {
+    min-height: 64px;
+    grid-template-columns: 1fr auto;
+    gap: var(--space-sm);
+    padding-inline: var(--space-md);
+  }
+
   .approval-count { display: none; }
+
+  .landing-top {
+    padding-top: .85rem;
+  }
+
+  .landing-top-inner {
+    grid-template-columns: 1fr auto;
+    gap: .5rem;
+  }
+
+  .landing-nav-menu {
+    justify-self: end;
+  }
+
+  .landing-top-cta {
+    display: none;
+  }
+
+  .landing-hero-center {
+    min-height: auto;
+    padding-top: 1.1rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .landing-hero-copy {
+    gap: .7rem;
+    padding-top: .35rem;
+  }
+
   .board-toolbar h1,
   .intake h1,
   .landing-brand,
   .not-found h1 { font-size: 2.4rem; }
+
   .landing-mega {
-    font-size: clamp(2.8rem, 18vw, 4.2rem);
+    font-size: clamp(2.6rem, 17vw, 3.8rem);
+    line-height: .9;
   }
+
   .landing-copy h2,
-  .landing-hero-copy h2 { font-size: 1.2rem; }
+  .landing-hero-copy h2 { font-size: 1.15rem; }
+
+  .auth-lede {
+    font-size: .95rem;
+  }
+
   .landing-cta-pair {
     width: 100%;
     flex-direction: column;
     align-items: stretch;
+    margin-top: .25rem;
   }
+
   .landing-cta-pair .enter-action,
   .landing-cta-pair .ghost-action {
     width: 100%;
+    min-height: 48px;
   }
+
+  .peek-card-c,
   .peek-card-d {
     display: none;
   }
+
   .landing-peek {
-    height: 6.75rem;
-    gap: .5rem;
+    height: 5.5rem;
+    gap: .4rem;
+    margin-top: 0;
+    padding-top: .4rem;
   }
+
+  .peek-card {
+    width: min(118px, 34vw);
+    min-height: 9.5rem;
+  }
+
+  .landing-section {
+    padding-block: 2.4rem;
+  }
+
+  .landing-brand-word {
+    font-size: clamp(2.8rem, 18vw, 4.5rem);
+  }
+
   .case-list button {
     grid-template-columns: 28px minmax(0, 1fr) 22px;
     min-height: 92px;
   }
+
   .case-list .status-signal,
   .case-list .case-date { display: none; }
+
   .field-pair { grid-template-columns: 1fr; }
+
   .case-rail .back-button,
   .case-rail .new-case-button { display: none; }
+
   .case-heading dl { grid-template-columns: 1fr 1fr; }
-  .workflow-line li { font-size: .58rem; }
+
+  .workflow-line {
+    overflow-x: auto;
+    gap: .35rem;
+    padding-bottom: .25rem;
+  }
+
+  .workflow-line li { font-size: .58rem; flex: none; }
   .workflow-line li span { display: none; }
-  .case-tabs { gap: var(--space-lg); }
+
+  .case-tabs {
+    gap: var(--space-md);
+    overflow-x: auto;
+    padding-bottom: .2rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .case-tabs button {
+    flex: none;
+    white-space: nowrap;
+  }
+
   .sheet-facts { grid-template-columns: 1fr 1fr; }
   .sheet-facts div:nth-child(2) { border-right: 0; }
   .sheet-facts div:nth-child(-n+2) { border-bottom: 1px solid var(--rule); }
