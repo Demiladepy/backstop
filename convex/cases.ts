@@ -15,6 +15,26 @@ const SUPPORTED_MIME_TYPES = new Set([
   "text/plain",
 ]);
 
+function resolveDocumentMimeType(
+  contentType: string | null | undefined,
+  fileName: string,
+) {
+  const declared = contentType?.split(";")[0]?.trim().toLowerCase();
+  if (declared && SUPPORTED_MIME_TYPES.has(declared)) {
+    return declared;
+  }
+  const lower = fileName.toLowerCase();
+  if (lower.endsWith(".html") || lower.endsWith(".htm")) return "text/html";
+  if (lower.endsWith(".pdf")) return "application/pdf";
+  if (lower.endsWith(".csv")) return "text/csv";
+  if (lower.endsWith(".txt")) return "text/plain";
+  if (lower.endsWith(".doc")) return "application/msword";
+  if (lower.endsWith(".docx")) {
+    return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  }
+  return declared || "application/octet-stream";
+}
+
 async function requireOwner(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
@@ -263,16 +283,19 @@ export const attachDocument = mutation({
     if (!metadata) {
       throw new ConvexError("Uploaded file was not found");
     }
-    const mimeType = metadata.contentType ?? "application/octet-stream";
+    const fileName = args.fileName.trim();
+    if (!fileName || fileName.length > 255) {
+      throw new ConvexError("fileName must contain 1 to 255 characters");
+    }
+    const mimeType = resolveDocumentMimeType(
+      metadata.contentType,
+      fileName,
+    );
     if (!SUPPORTED_MIME_TYPES.has(mimeType)) {
       throw new ConvexError(`Unsupported document type: ${mimeType}`);
     }
     if (metadata.size > MAX_FILE_BYTES) {
       throw new ConvexError("Document exceeds the 25 MB upload limit");
-    }
-    const fileName = args.fileName.trim();
-    if (!fileName || fileName.length > 255) {
-      throw new ConvexError("fileName must contain 1 to 255 characters");
     }
 
     const now = Date.now();

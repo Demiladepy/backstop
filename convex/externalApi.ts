@@ -45,16 +45,13 @@ export function buildFirecrawlParseRequest(
   const options: Record<string, unknown> = {
     formats: ["markdown"],
     onlyMainContent: true,
-    redactPII: true,
-    timeout: 120_000,
+    timeout: 60_000,
   };
-  if (mimeType === "application/pdf") {
-    options.parsers = [{ type: "pdf", mode: "auto", maxPages: 100 }];
+  if (mimeType === "application/pdf" || fileName.toLowerCase().endsWith(".pdf")) {
+    options.parsers = ["pdf"];
   }
-  body.append(
-    "options",
-    new Blob([JSON.stringify(options)], { type: "application/json" }),
-  );
+  // API expects the options JSON as a plain multipart text field, not a nested Blob.
+  body.append("options", JSON.stringify(options));
   return {
     url: `${FIRECRAWL_BASE_URL}/parse`,
     init: {
@@ -63,6 +60,41 @@ export function buildFirecrawlParseRequest(
       body,
     } satisfies RequestInit,
   };
+}
+
+/** Demo/HTML/text files can be read locally when Firecrawl /parse is unavailable. */
+export async function extractPlainDocumentText(
+  blob: Blob,
+  mimeType: string,
+  fileName: string,
+) {
+  const lower = fileName.toLowerCase();
+  const isTextish =
+    mimeType.startsWith("text/") ||
+    lower.endsWith(".html") ||
+    lower.endsWith(".htm") ||
+    lower.endsWith(".txt") ||
+    lower.endsWith(".csv");
+  if (!isTextish) {
+    return null;
+  }
+  const raw = await blob.text();
+  if (!raw.trim()) {
+    return null;
+  }
+  if (mimeType === "text/html" || lower.endsWith(".html") || lower.endsWith(".htm")) {
+    return raw
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+  return raw.trim();
 }
 
 async function readResponse(

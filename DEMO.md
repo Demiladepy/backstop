@@ -3,6 +3,9 @@
 Live app: https://backstop-xi.vercel.app
 (Convex mirror: https://festive-roadrunner-713.convex.site)
 
+Recorded walkthrough (silent, ~45s):  
+https://github.com/Demiladepy/backstop/releases/download/demo-video/backstop-hero-demo.webm
+
 Positioning line, said once:
 
 > Drafts and sends the appeals you approve — not legal or medical advice.

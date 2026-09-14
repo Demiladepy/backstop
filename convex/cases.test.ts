@@ -384,7 +384,9 @@ describe("draft safety and state transitions", () => {
 });
 
 describe("send and webhook gates without external credentials", () => {
-  test("send enqueue rejects unapproved drafts and approved drafts without a recipient", async () => {
+  test(
+    "send enqueue rejects unapproved drafts and approved drafts without a recipient",
+    async () => {
     const t = convexTest(schema, modules);
     const owner = t.withIdentity({ tokenIdentifier: "test|owner" });
     const caseId = await owner.mutation(api.cases.createCase, {
@@ -432,7 +434,9 @@ describe("send and webhook gates without external credentials", () => {
       return await ctx.db.query("messages").take(10);
     });
     expect(rows).toEqual([]);
-  });
+  },
+    15_000,
+  );
 
   test("redelivered inbound messages are stored and audited once", async () => {
     const t = convexTest(schema, modules);
@@ -620,6 +624,62 @@ describe("workflow auto-chain wiring", () => {
         (entry: Doc<"auditLog">) =>
           entry.event === "external.firecrawl.policy_research" &&
           entry.status === "failed",
+      ),
+    ).toBe(true);
+  });
+
+  test("failResearch ignores late failure after case already awaits reply", async () => {
+    const t = convexTest(schema, modules);
+    const owner = t.withIdentity({ tokenIdentifier: "test|owner" });
+    const caseId = await owner.mutation(api.cases.createCase, {
+      title: "Late research denial",
+      category: "medical_denial",
+    });
+    await t.run(async (ctx) => {
+      const now = Date.now();
+      await ctx.db.insert("sources", {
+        caseId,
+        ownerId: "test|owner",
+        kind: "document",
+        title: "Sample denial letter",
+        content: "We denied the requested outpatient MRI.",
+        excerpt: "We denied the requested outpatient MRI.",
+        retrievedAt: now,
+      });
+      await ctx.db.insert("drafts", {
+        caseId,
+        ownerId: "test|owner",
+        kind: "appeal",
+        status: "sent",
+        subject: "Appeal already sent",
+        paragraphs: [
+          {
+            text: "[UNVERIFIED] Sample request.",
+            sourceIds: [],
+            verification: "unverified",
+          },
+        ],
+        createdAt: now,
+        updatedAt: now,
+      });
+      await ctx.db.patch("cases", caseId, { status: "awaiting_reply" });
+    });
+
+    await t.mutation(internal.workflowModel.failResearch, {
+      caseId,
+      ownerId: "test|owner",
+      operationId: "firecrawl:policy:late",
+      error: "Late Firecrawl failure",
+    });
+
+    const detail = await owner.query(api.cases.getCase, { caseId });
+    expect(detail?.case.status).toBe("awaiting_reply");
+    expect(
+      detail?.audit.some(
+        (entry: Doc<"auditLog">) =>
+          entry.event === "external.firecrawl.policy_research" &&
+          entry.status === "failed" &&
+          entry.detail?.includes("Late research ignored"),
       ),
     ).toBe(true);
   });

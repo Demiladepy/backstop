@@ -75,12 +75,22 @@ action is audited.
 - Convex static host: https://festive-roadrunner-713.convex.site
 - Public repository: https://github.com/Demiladepy/backstop
 
+### Day 1 — Harden hero + real AgentMail
+
+- Shared Backstop AgentMail inbox via `AGENTMAIL_SHARED_INBOX_*` (no per-case inbox burn).
+- Local demo outbound only when `DEMO_ALLOW_LOCAL_SEND=1` (unset on prod).
+- Late research no longer clobbers approved/sent cases.
+- Live smoke defaults to Vercel; hero path verified green on
+  https://backstop-xi.vercel.app (auth, approve→email, simulate, Watch, mobile).
+
 ## Submission links
 
 - Live app: https://backstop-xi.vercel.app
 - Public repository: https://github.com/Demiladepy/backstop
-- Demo video: TODO — record from `DEMO.md` (under 3 minutes)
-- Submit on vibeapps.dev before Sep 22, 2026, 12:00 PM PT
+- Demo video: https://github.com/Demiladepy/backstop/releases/download/demo-video/backstop-hero-demo.webm
+- Demo release page: https://github.com/Demiladepy/backstop/releases/tag/demo-video
+- Submit on vibeapps.dev before Sep 22, 2026, 12:00 PM PT:
+  https://vibeapps.dev/judging/convex-all-gas-hackathon-openai/submit
 
 ## Demo safety
 

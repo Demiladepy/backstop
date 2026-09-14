@@ -1,4 +1,4 @@
-import { AgentMail, vOutboundId } from "@agentmail/convex";
+import { AgentMail } from "@agentmail/convex";
 import { ConvexError, v } from "convex/values";
 import { components, internal } from "./_generated/api";
 import {
@@ -7,12 +7,16 @@ import {
   internalQuery,
   mutation,
   query,
+  type ActionCtx,
 } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
 import schema from "./schema";
 
 export const agentmail: AgentMail = new AgentMail(components.agentmail, {
   onMessageReceived: internal.email.onMessageReceived,
 });
+
+const SHARED_INBOX_CLIENT_ID = "backstop-shared";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value !== null
@@ -26,6 +30,213 @@ function stringField(record: Record<string, unknown>, ...names: string[]) {
     if (typeof value === "string" && value.trim()) return value;
   }
   return undefined;
+}
+
+function demoLocalSendAllowed() {
+  return process.env.DEMO_ALLOW_LOCAL_SEND === "1";
+}
+
+function readInboxIds(value: unknown): {
+  inboxId?: string;
+  inboxEmail?: string;
+} {
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "inboxId" in value &&
+    "inboxEmail" in value &&
+    typeof (value as { inboxId: unknown }).inboxId === "string" &&
+    typeof (value as { inboxEmail: unknown }).inboxEmail === "string"
+  ) {
+    return {
+      inboxId: (value as { inboxId: string }).inboxId,
+      inboxEmail: (value as { inboxEmail: string }).inboxEmail,
+    };
+  }
+  const inbox = asRecord(value);
+  return {
+    inboxId: inbox ? stringField(inbox, "inbox_id", "inboxId", "id") : undefined,
+    inboxEmail: inbox ? stringField(inbox, "email") : undefined,
+  };
+}
+
+function parseInboxList(value: unknown): Array<{ inboxId: string; inboxEmail: string }> {
+  const root = asRecord(value);
+  const rawList = Array.isArray(value)
+    ? value
+    : root && Array.isArray(root.inboxes)
+      ? root.inboxes
+      : root && Array.isArray(root.data)
+        ? root.data
+        : [];
+  const out: Array<{ inboxId: string; inboxEmail: string }> = [];
+  for (const item of rawList) {
+    const ids = readInboxIds(item);
+    if (ids.inboxId && ids.inboxEmail) {
+      out.push({ inboxId: ids.inboxId, inboxEmail: ids.inboxEmail });
+    }
+  }
+  return out;
+}
+
+async function listInboxesViaHttp() {
+  const apiKey = process.env.AGENTMAIL_API_KEY;
+  if (!apiKey) {
+    throw new Error("AGENTMAIL_API_KEY is not set on this Convex deployment");
+  }
+  const baseUrl = (
+    process.env.AGENTMAIL_BASE_URL ?? "https://api.agentmail.to/v0"
+  ).replace(/\/$/, "");
+  const response = await fetch(`${baseUrl}/inboxes?limit=20`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  if (!response.ok) {
+    const body = (await response.text()).slice(0, 500);
+    throw new Error(`AgentMail list inboxes failed (${response.status}): ${body}`);
+  }
+  return parseInboxList(await response.json());
+}
+
+async function createInboxViaHttp(clientId: string) {
+  const apiKey = process.env.AGENTMAIL_API_KEY;
+  if (!apiKey) {
+    throw new Error("AGENTMAIL_API_KEY is not set on this Convex deployment");
+  }
+  const baseUrl = (
+    process.env.AGENTMAIL_BASE_URL ?? "https://api.agentmail.to/v0"
+  ).replace(/\/$/, "");
+  const response = await fetch(`${baseUrl}/inboxes`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      display_name: "Backstop",
+      client_id: clientId,
+    }),
+  });
+  if (!response.ok) {
+    const body = (await response.text()).slice(0, 500);
+    throw new Error(`AgentMail create inbox failed (${response.status}): ${body}`);
+  }
+  const created = readInboxIds(await response.json());
+  if (!created.inboxId || !created.inboxEmail) {
+    throw new Error("AgentMail did not return an inbox ID and email");
+  }
+  return {
+    inboxId: created.inboxId,
+    inboxEmail: created.inboxEmail,
+  };
+}
+
+/**
+ * Prefer one shared Backstop inbox (plan caps at a few inboxes).
+ * Order: case inbox → env shared → list/reuse → create with stable client_id.
+ */
+async function ensureCaseInbox(
+  ctx: ActionCtx,
+  caseRow: Doc<"cases">,
+  ownerId: string,
+): Promise<{ inboxId: string; inboxEmail: string }> {
+  if (caseRow.agentMailInboxId && caseRow.agentMailInboxEmail) {
+    return {
+      inboxId: caseRow.agentMailInboxId,
+      inboxEmail: caseRow.agentMailInboxEmail,
+    };
+  }
+
+  const sharedId = process.env.AGENTMAIL_SHARED_INBOX_ID?.trim();
+  const sharedEmail = process.env.AGENTMAIL_SHARED_INBOX_EMAIL?.trim();
+  if (sharedId && sharedEmail) {
+    await ctx.runMutation(internal.email.storeInbox, {
+      caseId: caseRow._id,
+      ownerId,
+      inboxId: sharedId,
+      email: sharedEmail,
+    });
+    return { inboxId: sharedId, inboxEmail: sharedEmail };
+  }
+
+  let listed: Array<{ inboxId: string; inboxEmail: string }> = [];
+  try {
+    listed = parseInboxList(await agentmail.listInboxes(ctx, { limit: 20 }));
+  } catch {
+    try {
+      listed = await listInboxesViaHttp();
+    } catch {
+      listed = [];
+    }
+  }
+  if (listed[0]) {
+    await ctx.runMutation(internal.email.storeInbox, {
+      caseId: caseRow._id,
+      ownerId,
+      inboxId: listed[0].inboxId,
+      email: listed[0].inboxEmail,
+    });
+    return listed[0];
+  }
+
+  let created: { inboxId: string; inboxEmail: string };
+  try {
+    const ids = readInboxIds(
+      await agentmail.createInbox(ctx, {
+        displayName: "Backstop",
+        clientId: SHARED_INBOX_CLIENT_ID,
+      }),
+    );
+    if (!ids.inboxId || !ids.inboxEmail) {
+      throw new Error("AgentMail createInbox returned incomplete inbox");
+    }
+    created = { inboxId: ids.inboxId, inboxEmail: ids.inboxEmail };
+  } catch (createError) {
+    const detail =
+      createError instanceof Error ? createError.message : "createInbox failed";
+    if (/limit_exceeded|403|Couldn't resolve/i.test(detail)) {
+      const viaHttp: Array<{ inboxId: string; inboxEmail: string }> =
+        await listInboxesViaHttp().catch(() => []);
+      const reusable: { inboxId: string; inboxEmail: string } | undefined =
+        viaHttp[0];
+      if (reusable) {
+        await ctx.runMutation(internal.email.storeInbox, {
+          caseId: caseRow._id,
+          ownerId,
+          inboxId: reusable.inboxId,
+          email: reusable.inboxEmail,
+        });
+        return reusable;
+      }
+    }
+    try {
+      created = await createInboxViaHttp(SHARED_INBOX_CLIENT_ID);
+    } catch (httpError) {
+      const httpDetail =
+        httpError instanceof Error ? httpError.message : "http create failed";
+      if (/limit_exceeded|403/i.test(httpDetail)) {
+        const again = await listInboxesViaHttp();
+        if (again[0]) {
+          await ctx.runMutation(internal.email.storeInbox, {
+            caseId: caseRow._id,
+            ownerId,
+            inboxId: again[0].inboxId,
+            email: again[0].inboxEmail,
+          });
+          return again[0];
+        }
+      }
+      throw new Error(`${detail} | ${httpDetail}`);
+    }
+  }
+
+  await ctx.runMutation(internal.email.storeInbox, {
+    caseId: caseRow._id,
+    ownerId,
+    inboxId: created.inboxId,
+    email: created.inboxEmail,
+  });
+  return created;
 }
 
 export const getSendContext = internalQuery({
@@ -79,14 +290,60 @@ export const storeInbox = internalMutation({
   },
 });
 
+async function sendMessageViaHttp(
+  inboxId: string,
+  payload: {
+    to: string;
+    subject: string;
+    text: string;
+    labels: string[];
+  },
+) {
+  const apiKey = process.env.AGENTMAIL_API_KEY;
+  if (!apiKey) {
+    throw new Error("AGENTMAIL_API_KEY is not set on this Convex deployment");
+  }
+  const baseUrl = (
+    process.env.AGENTMAIL_BASE_URL ?? "https://api.agentmail.to/v0"
+  ).replace(/\/$/, "");
+  const response = await fetch(`${baseUrl}/inboxes/${inboxId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      to: payload.to,
+      subject: payload.subject,
+      text: payload.text,
+      labels: payload.labels,
+    }),
+  });
+  if (!response.ok) {
+    const body = (await response.text()).slice(0, 500);
+    throw new Error(`AgentMail send failed (${response.status}): ${body}`);
+  }
+  const value: unknown = await response.json();
+  const record = asRecord(value);
+  const messageId = record
+    ? stringField(record, "message_id", "messageId", "id")
+    : undefined;
+  if (!messageId) {
+    throw new Error("AgentMail send did not return a message id");
+  }
+  return messageId;
+}
+
 export const enqueueApprovedDraft = internalMutation({
   args: {
     draftId: v.id("drafts"),
     ownerId: v.string(),
     inboxId: v.string(),
     inboxEmail: v.string(),
+    /** When set, skip component enqueue (app already delivered via HTTP). */
+    outboundId: v.optional(v.string()),
   },
-  returns: v.union(vOutboundId, v.null()),
+  returns: v.union(v.string(), v.null()),
   handler: async (ctx, args) => {
     const draft = await ctx.db.get("drafts", args.draftId);
     if (!draft || draft.ownerId !== args.ownerId) {
@@ -110,12 +367,15 @@ export const enqueueApprovedDraft = internalMutation({
     if (existing) return null;
 
     const body = draft.paragraphs.map((paragraph) => paragraph.text).join("\n\n");
-    const outboundId = await agentmail.sendMessage(ctx, args.inboxId, {
-      to: caseRow.counterpartyEmail,
-      subject: draft.subject,
-      text: body,
-      labels: ["backstop", `case-${draft.caseId}`],
-    });
+    let outboundId = args.outboundId;
+    if (!outboundId) {
+      outboundId = await agentmail.sendMessage(ctx, args.inboxId, {
+        to: caseRow.counterpartyEmail,
+        subject: draft.subject,
+        text: body,
+        labels: ["backstop", `case-${draft.caseId}`],
+      });
+    }
     const now = Date.now();
     await ctx.db.insert("messages", {
       caseId: draft.caseId,
@@ -150,7 +410,9 @@ export const enqueueApprovedDraft = internalMutation({
       status: "succeeded",
       entityType: "message",
       entityId: outboundId,
-      detail: "Approved appeal queued for durable AgentMail delivery.",
+      detail: args.outboundId
+        ? "Approved appeal delivered via AgentMail HTTP API."
+        : "Approved appeal queued for durable AgentMail delivery.",
       createdAt: now,
     });
     return outboundId;
@@ -188,6 +450,76 @@ export const recordSendFailure = internalMutation({
   },
 });
 
+/** Only used when DEMO_ALLOW_LOCAL_SEND=1 — never the prod happy path. */
+export const recordLocalDemoSend = internalMutation({
+  args: {
+    draftId: v.id("drafts"),
+    ownerId: v.string(),
+    inboxId: v.string(),
+    inboxEmail: v.string(),
+    reason: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const draft = await ctx.db.get("drafts", args.draftId);
+    if (!draft || draft.ownerId !== args.ownerId) return null;
+    const caseRow = await ctx.db.get("cases", draft.caseId);
+    if (!caseRow || caseRow.ownerId !== args.ownerId) return null;
+    if (draft.status === "sent") return null;
+    if (draft.status !== "approved") {
+      throw new ConvexError("Only an approved draft can be sent");
+    }
+    const existing = await ctx.db
+      .query("messages")
+      .withIndex("by_draftId", (q) => q.eq("draftId", draft._id))
+      .first();
+    if (existing) return null;
+
+    const body = draft.paragraphs.map((paragraph) => paragraph.text).join("\n\n");
+    const now = Date.now();
+    const outboundId = `demo-outbound:${draft._id}`;
+    await ctx.db.insert("messages", {
+      caseId: draft.caseId,
+      ownerId: args.ownerId,
+      draftId: draft._id,
+      direction: "outbound",
+      channel: "email",
+      status: "sent",
+      subject: draft.subject,
+      body,
+      agentMailOutboundId: outboundId,
+      from: args.inboxEmail,
+      to: caseRow.counterpartyEmail,
+      createdAt: now,
+      updatedAt: now,
+    });
+    await ctx.db.patch("drafts", draft._id, {
+      status: "sent",
+      body,
+      updatedAt: now,
+    });
+    await ctx.db.patch("cases", draft.caseId, {
+      agentMailInboxId: caseRow.agentMailInboxId ?? args.inboxId,
+      agentMailInboxEmail: caseRow.agentMailInboxEmail ?? args.inboxEmail,
+      status: "awaiting_reply",
+      updatedAt: now,
+    });
+    await ctx.db.insert("auditLog", {
+      caseId: draft.caseId,
+      ownerId: args.ownerId,
+      actor: "agent",
+      event: "external.agentmail.send",
+      operationId: `agentmail:send:${draft._id}`,
+      status: "succeeded",
+      entityType: "message",
+      entityId: outboundId,
+      detail: `Local demo outbound recorded after AgentMail send failed: ${args.reason}`,
+      createdAt: now,
+    });
+    return null;
+  },
+});
+
 export const sendApprovedDraft = internalAction({
   args: {
     draftId: v.id("drafts"),
@@ -195,50 +527,79 @@ export const sendApprovedDraft = internalAction({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    try {
-      const context = await ctx.runQuery(internal.email.getSendContext, args);
-      if (!context || context.alreadyQueued || context.draft.status === "sent") {
-        return null;
-      }
-      if (context.draft.status !== "approved") {
-        throw new ConvexError("Only an approved draft can be sent");
-      }
-      let inboxId = context.case.agentMailInboxId;
-      let inboxEmail = context.case.agentMailInboxEmail;
-      if (!inboxId || !inboxEmail) {
-        const value: unknown = await agentmail.createInbox(ctx, {
-          displayName: "Backstop",
-          clientId: `backstop-${context.case._id}`,
-        });
-        const inbox = asRecord(value);
-        inboxId = inbox ? stringField(inbox, "inbox_id", "inboxId") : undefined;
-        inboxEmail = inbox ? stringField(inbox, "email") : undefined;
-        if (!inboxId || !inboxEmail) {
-          throw new Error("AgentMail did not return an inbox ID and email");
-        }
-        await ctx.runMutation(internal.email.storeInbox, {
-          caseId: context.case._id,
+    const context = await ctx.runQuery(internal.email.getSendContext, args);
+    if (!context || context.alreadyQueued || context.draft.status === "sent") {
+      return null;
+    }
+    if (context.draft.status !== "approved") {
+      throw new ConvexError("Only an approved draft can be sent");
+    }
+
+    const failOrDemo = async (reason: string) => {
+      if (demoLocalSendAllowed()) {
+        await ctx.runMutation(internal.email.recordLocalDemoSend, {
+          draftId: args.draftId,
           ownerId: args.ownerId,
-          inboxId,
-          email: inboxEmail,
+          inboxId:
+            context.case.agentMailInboxId ?? `demo-inbox:${context.case._id}`,
+          inboxEmail:
+            context.case.agentMailInboxEmail ??
+            `demo-${context.case._id.slice(-8)}@backstop.demo`,
+          reason: reason.slice(0, 500),
         });
+        return;
       }
-      await ctx.runMutation(internal.email.enqueueApprovedDraft, {
+      await ctx.runMutation(internal.email.recordSendFailure, {
         draftId: args.draftId,
         ownerId: args.ownerId,
-        inboxId,
-        inboxEmail,
+        error: reason.slice(0, 1_000),
       });
+      throw new Error(reason);
+    };
+
+    try {
+      const inbox = await ensureCaseInbox(ctx, context.case, args.ownerId);
+      const draftBody = context.draft.paragraphs
+        .map((paragraph) => paragraph.text)
+        .join("\n\n");
+      const to = context.case.counterpartyEmail;
+      if (!to) {
+        throw new Error("Counterparty email is required before sending");
+      }
+      try {
+        const messageId = await sendMessageViaHttp(inbox.inboxId, {
+          to,
+          subject: context.draft.subject,
+          text: draftBody,
+          labels: ["backstop", `case-${context.case._id}`],
+        });
+        await ctx.runMutation(internal.email.enqueueApprovedDraft, {
+          draftId: args.draftId,
+          ownerId: args.ownerId,
+          inboxId: inbox.inboxId,
+          inboxEmail: inbox.inboxEmail,
+          outboundId: messageId,
+        });
+      } catch (httpSendError) {
+        // Fall back to component enqueue (may still persist a local outbound).
+        await ctx.runMutation(internal.email.enqueueApprovedDraft, {
+          draftId: args.draftId,
+          ownerId: args.ownerId,
+          inboxId: inbox.inboxId,
+          inboxEmail: inbox.inboxEmail,
+        });
+        const detail =
+          httpSendError instanceof Error
+            ? httpSendError.message
+            : "HTTP send failed";
+        console.warn(`AgentMail HTTP send failed; used component enqueue: ${detail}`);
+      }
       return null;
     } catch (error) {
       const message =
         error instanceof Error ? error.message.slice(0, 1_000) : "AgentMail send failed";
-      await ctx.runMutation(internal.email.recordSendFailure, {
-        draftId: args.draftId,
-        ownerId: args.ownerId,
-        error: message,
-      });
-      throw error;
+      await failOrDemo(message);
+      return null;
     }
   },
 });
@@ -256,13 +617,32 @@ export const onMessageReceived = internalMutation({
     const inboxId = stringField(message, "inbox_id", "inboxId");
     const messageId = stringField(message, "message_id", "messageId");
     if (!inboxId || !messageId) return null;
-    const caseRow = await ctx.db
+
+    // Shared inbox may be attached to many cases — do not use .unique().
+    const candidates = await ctx.db
       .query("cases")
       .withIndex("by_agentMailInboxId", (q) =>
         q.eq("agentMailInboxId", inboxId),
       )
-      .unique();
-    if (!caseRow) return null;
+      .take(25);
+    if (candidates.length === 0) return null;
+
+    let caseRow = candidates[0];
+    if (candidates.length > 1) {
+      const labels = message.labels;
+      const labelList = Array.isArray(labels)
+        ? labels.filter((item): item is string => typeof item === "string")
+        : [];
+      const caseLabel = labelList.find((label) => label.startsWith("case-"));
+      if (caseLabel) {
+        const caseId = caseLabel.slice("case-".length) as Id<"cases">;
+        const matched = candidates.find((row) => row._id === caseId);
+        if (matched) caseRow = matched;
+      } else {
+        caseRow = [...candidates].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+      }
+    }
+
     const existing = await ctx.db
       .query("messages")
       .withIndex("by_agentMailMessageId", (q) =>

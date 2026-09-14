@@ -305,7 +305,23 @@ export const completeResearch = internalMutation({
       fail("Case not found");
     }
     if (caseRow.status !== "researching") {
-      fail(`Cannot persist research from ${caseRow.status}`);
+      const now = Date.now();
+      await ctx.db.insert("auditLog", {
+        caseId: args.caseId,
+        ownerId: args.ownerId,
+        actor: "system",
+        event: "external.firecrawl.policy_research",
+        operationId: args.operationId,
+        status: "failed",
+        entityType: "case",
+        entityId: args.caseId,
+        detail: `Late research ignored; case already ${caseRow.status}.`.slice(
+          0,
+          1_000,
+        ),
+        createdAt: now,
+      });
+      return [];
     }
     if (args.sources.length < 1 || args.sources.length > MAX_POLICY_SOURCES) {
       fail(`Research must contain 1 to ${MAX_POLICY_SOURCES} policy sources`);
@@ -379,6 +395,41 @@ export const failResearch = internalMutation({
       return null;
     }
     const now = Date.now();
+    const existingAppeal = await ctx.db
+      .query("drafts")
+      .withIndex("by_caseId", (q) => q.eq("caseId", args.caseId))
+      .filter((q) => q.eq(q.field("kind"), "appeal"))
+      .first();
+    const pastResearch =
+      caseRow.status === "awaiting_approval" ||
+      caseRow.status === "approved" ||
+      caseRow.status === "sent" ||
+      caseRow.status === "awaiting_reply" ||
+      caseRow.status === "resolved" ||
+      caseRow.status === "closed" ||
+      (caseRow.status === "drafting" && existingAppeal !== null);
+
+    // A slow research job may finish after the owner already approved/sent.
+    // Do not clobber that progress or spawn a second appeal draft.
+    if (pastResearch) {
+      await ctx.db.insert("auditLog", {
+        caseId: args.caseId,
+        ownerId: args.ownerId,
+        actor: "system",
+        event: "external.firecrawl.policy_research",
+        operationId: args.operationId,
+        status: "failed",
+        entityType: "case",
+        entityId: args.caseId,
+        detail: `Late research ignored; case already ${caseRow.status}. ${args.error}`.slice(
+          0,
+          1_000,
+        ),
+        createdAt: now,
+      });
+      return null;
+    }
+
     await ctx.db.patch("cases", args.caseId, {
       status: "error",
       updatedAt: now,
@@ -401,7 +452,7 @@ export const failResearch = internalMutation({
         q.eq("caseId", args.caseId).eq("kind", "document"),
       )
       .first();
-    if (documentSource) {
+    if (documentSource && !existingAppeal) {
       await ctx.scheduler.runAfter(0, internal.draftAppeal.runDraftAppeal, {
         caseId: args.caseId,
         ownerId: args.ownerId,

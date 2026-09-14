@@ -12,6 +12,9 @@ dist
 dist-ssr
 playwright-report
 test-results
+e2e/live-results
+e2e/demo-record-results
+demo/*.webm
 *.local
 
 # Editor directories and files

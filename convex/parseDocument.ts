@@ -6,7 +6,7 @@ import {
   internalAction,
   type ActionCtx,
 } from "./_generated/server";
-import { parseWithFirecrawl, safeExternalError } from "./externalApi";
+import { parseWithFirecrawl, extractPlainDocumentText, safeExternalError } from "./externalApi";
 
 async function ownerFromAuth(ctx: ActionCtx) {
   const identity = await ctx.auth.getUserIdentity();
@@ -45,11 +45,24 @@ async function run(
       throw new Error(`Convex storage returned HTTP ${storageResponse.status}`);
     }
     const blob = await storageResponse.blob();
-    const markdown = await parseWithFirecrawl(
-      blob,
-      job.document.fileName,
-      job.document.mimeType,
-    );
+    let markdown: string;
+    try {
+      markdown = await parseWithFirecrawl(
+        blob,
+        job.document.fileName,
+        job.document.mimeType,
+      );
+    } catch (firecrawlError) {
+      const fallback = await extractPlainDocumentText(
+        blob,
+        job.document.mimeType,
+        job.document.fileName,
+      );
+      if (!fallback) {
+        throw firecrawlError;
+      }
+      markdown = fallback;
+    }
     return await ctx.runMutation(internal.workflowModel.completeParse, {
       documentId,
       ownerId,
