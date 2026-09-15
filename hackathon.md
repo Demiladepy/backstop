@@ -83,6 +83,15 @@ action is audited.
 - Live smoke defaults to Vercel; hero path verified green on
   https://backstop-xi.vercel.app (auth, approve→email, simulate, Watch, mobile).
 
+### Day 2 — Vercel build + AgentMail HTTP delivery
+
+- Fixed Vercel production build: `tsc -b` pulled `convex/email.ts` via generated
+  API types; added Node types to `tsconfig.app.json` / `convex/tsconfig.json`
+  so `process.env` typechecks.
+- App-side AgentMail HTTP send uses deployment `AGENTMAIL_API_KEY` (avoids
+  component workpool missing the key).
+- Re-verified live hero smoke on Vercel after deploy.
+
 ## Submission links
 
 - Live app: https://backstop-xi.vercel.app

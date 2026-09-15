@@ -43,3 +43,5 @@ demo/*.webm
 .jwt-private-key.txt
 .jwks.txt
 .site-url.txt
+
+.vercel
