@@ -62,7 +62,8 @@ function deadlineLabel(deadlineAt: number | undefined, now = Date.now()) {
   return { text: `${days}d left`, urgency: 'ok' as const }
 }
 
-function boardCaseRank(status: Doc<'cases'>['status']) {
+function boardCaseRank(status: Doc<'cases'>['status'], title: string) {
+  if (isDemoBoardFiller(title)) return 5
   if (status === 'awaiting_approval') return 0
   if (status === 'error') return 1
   if (status === 'drafting' || status === 'researching' || status === 'parsing') return 2
@@ -71,7 +72,7 @@ function boardCaseRank(status: Doc<'cases'>['status']) {
 
 function sortBoardCases(cases: Doc<'cases'>[]) {
   return [...cases].sort((a, b) => {
-    const rank = boardCaseRank(a.status) - boardCaseRank(b.status)
+    const rank = boardCaseRank(a.status, a.title) - boardCaseRank(b.status, b.title)
     if (rank !== 0) return rank
     const deadlineA = a.deadlineAt ?? Number.MAX_SAFE_INTEGER
     const deadlineB = b.deadlineAt ?? Number.MAX_SAFE_INTEGER
@@ -88,6 +89,10 @@ function documentKindLabel(kind: Doc<'documents'>['kind'] | undefined, fileName:
   if (/eob/i.test(fileName)) return 'EOB'
   if (/denial/i.test(fileName)) return 'Denial letter'
   return 'Document'
+}
+
+function isDemoBoardFiller(title: string) {
+  return title.startsWith('Demo board —')
 }
 
 /** Document sources first, then policy — shared numbering for Evidence + Appeal. */
@@ -269,12 +274,31 @@ function CaseBoard({
   onSelect: (id: Id<'cases'>) => void
   onNew: () => void
 }) {
+  const seedDemoCaseload = useMutation(api.cases.seedDemoCaseload)
+  const [seedingBoard, setSeedingBoard] = useState(false)
+  const [boardError, setBoardError] = useState('')
+
   if (cases === undefined) {
     return <BoardSkeleton />
   }
 
   const ordered = sortBoardCases(cases)
-  const needsReview = ordered.filter((item) => item.status === 'awaiting_approval')
+  const needsReview = ordered.filter(
+    (item) => item.status === 'awaiting_approval' && !isDemoBoardFiller(item.title),
+  )
+  const hasDemoRows = cases.some((item) => isDemoBoardFiller(item.title))
+
+  const loadCaseload = async () => {
+    setBoardError('')
+    setSeedingBoard(true)
+    try {
+      await seedDemoCaseload({})
+    } catch (caught) {
+      setBoardError(readableError(caught))
+    } finally {
+      setSeedingBoard(false)
+    }
+  }
 
   return (
     <section className="board page-enter" aria-labelledby="board-title">
@@ -336,37 +360,77 @@ function CaseBoard({
               </div>
               <h2>No case file yet</h2>
               <p>
-                Start with a fictional denial. Backstop reads it, finds policy
-                language, and prepares an appeal for your review.
+                Start with a fictional denial packet, or load a small sample
+                caseload so the board looks like a working list.
               </p>
-              <button className="secondary-action" type="button" onClick={onNew}>
-                Create your first case
-              </button>
+              <div className="empty-register-actions">
+                <button className="secondary-action" type="button" onClick={onNew}>
+                  Create your first case
+                </button>
+                <button
+                  className="text-button"
+                  type="button"
+                  disabled={seedingBoard}
+                  onClick={() => void loadCaseload()}
+                >
+                  {seedingBoard ? 'Loading sample caseload…' : 'Load sample caseload'}
+                </button>
+              </div>
+              {boardError && <p className="form-error" role="alert">{boardError}</p>}
             </div>
           ) : (
-            <ol className="case-list">
-              {ordered.map((item, index) => {
-                const deadline = deadlineLabel(item.deadlineAt)
-                return (
-                  <li key={item._id}>
-                    <button type="button" onClick={() => onSelect(item._id)}>
-                      <span className="case-index">{String(index + 1).padStart(2, '0')}</span>
-                      <span className="case-title">
-                        <strong>{item.title}</strong>
-                        <small>{item.counterpartyName ?? 'Payer not named'}</small>
-                      </span>
-                      <span className={`status-signal status-${item.status}`}>
-                        {statusCopy[item.status]}
-                      </span>
-                      <span className={`case-deadline urgency-${deadline.urgency}`}>
-                        {deadline.text}
-                      </span>
-                      <span className="arrow" aria-hidden="true">→</span>
-                    </button>
-                  </li>
-                )
-              })}
-            </ol>
+            <>
+              {!hasDemoRows && (
+                <div className="board-caseload-hint">
+                  <p>Optional: add filler rows for demo density (not the live hero path).</p>
+                  <button
+                    className="text-button"
+                    type="button"
+                    disabled={seedingBoard}
+                    onClick={() => void loadCaseload()}
+                  >
+                    {seedingBoard ? 'Loading…' : 'Add sample caseload rows'}
+                  </button>
+                </div>
+              )}
+              <ol className="case-list">
+                {ordered.map((item, index) => {
+                  const deadline = deadlineLabel(item.deadlineAt)
+                  const filler = isDemoBoardFiller(item.title)
+                  return (
+                    <li key={item._id}>
+                      <button
+                        type="button"
+                        className={filler ? 'is-filler' : undefined}
+                        disabled={filler}
+                        title={filler ? 'Board filler for demo density — start a sample case for the live path' : undefined}
+                        onClick={() => {
+                          if (!filler) onSelect(item._id)
+                        }}
+                      >
+                        <span className="case-index">{String(index + 1).padStart(2, '0')}</span>
+                        <span className="case-title">
+                          <strong>{item.title}</strong>
+                          <small>
+                            {filler
+                              ? 'List filler · not the live hero path'
+                              : (item.counterpartyName ?? 'Payer not named')}
+                          </small>
+                        </span>
+                        <span className={`status-signal status-${item.status}`}>
+                          {filler ? 'Demo list' : statusCopy[item.status]}
+                        </span>
+                        <span className={`case-deadline urgency-${deadline.urgency}`}>
+                          {deadline.text}
+                        </span>
+                        <span className="arrow" aria-hidden="true">{filler ? '·' : '→'}</span>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ol>
+              {boardError && <p className="form-error" role="alert">{boardError}</p>}
+            </>
           )}
         </div>
       </div>
@@ -517,7 +581,7 @@ function Intake({
                 }}
               >
                 <span className="btn-shine" aria-hidden="true" />
-                {busy ? 'Seeding sample letter…' : 'Open case file'}
+                {busy ? 'Attaching sample packet…' : 'Open case file'}
               </button>
               <button className="text-button" type="button" onClick={onCancel}>
                 Cancel
@@ -765,7 +829,7 @@ function getNextStep(detail: {
   drafts: Doc<'drafts'>[]
 }) {
   if (detail.documents.length === 0) {
-    return { title: 'Add the sample denial letter.', copy: 'PDF, Word, HTML, CSV, or plain text. Backstop will create the first evidence source from it.', action: 'Add document', tab: 'evidence' as const }
+    return { title: 'Add the sample denial packet.', copy: 'A fictional denial letter and EOB, or your own sample PDF/Word/HTML/CSV/text. Backstop creates evidence sources from them.', action: 'Add documents', tab: 'evidence' as const }
   }
   if (detail.documents.some((document) => document.status === 'parsing') || detail.case.status === 'parsing') {
     return { title: 'The letter is being read.', copy: 'This page updates live. You can stay here while the document becomes a cited source.', action: 'Watch evidence', tab: 'evidence' as const }

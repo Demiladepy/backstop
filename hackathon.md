@@ -111,6 +111,20 @@ action is audited.
 - Case board sorts needs-review first, shows deadline urgency, and a review queue strip.
 - Evidence tiles label document kinds; appeal compare shows every document source.
 
+### Day 5 — Demo packaging
+
+- Landing hero: product headline + single primary CTA (Enter private demo).
+- Idempotent `seedDemoCaseload` + board affordance for a 3-row medical_denial list.
+- DEMO.md narration cue sheet + `demo/backstop-hero-demo.srt`; `npm run demo:record`.
+- README aligned to Vercel live URL, DEMO, and video links.
+
+### Day 6 — Freeze + polish
+
+- Demo caseload rows are non-openable fillers (no broken empty “needs review” trap).
+- Packet wording aligned on intake busy state and next-step empty copy.
+- Added `SUBMISSION.md` paste sheet for vibeapps; DEMO.md warns fillers ≠ hero path.
+- Re-smoke: lint, build, unit tests, live Vercel hero path.
+
 ## Submission links
 
 - Live app: https://backstop-xi.vercel.app

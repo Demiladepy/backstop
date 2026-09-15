@@ -314,6 +314,30 @@ button:disabled {
   font-size: .78rem;
 }
 
+.empty-register-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.board-caseload-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: .65rem .85rem;
+  border-bottom: var(--hairline);
+  background: var(--surface-0);
+}
+
+.board-caseload-hint p {
+  margin: 0;
+  color: var(--muted);
+  font-size: .78rem;
+}
+
 .board-intro h1,
 .intake h1,
 .not-found h1 {
@@ -493,6 +517,24 @@ button:disabled {
 
 .case-list button:hover .arrow {
   transform: translateX(4px);
+}
+
+.case-list button.is-filler {
+  opacity: .72;
+  cursor: default;
+}
+
+.case-list button.is-filler:hover,
+.case-list button.is-filler:focus-visible {
+  background: transparent;
+}
+
+.case-list button.is-filler .case-title strong {
+  text-decoration: none;
+}
+
+.case-list button.is-filler:disabled {
+  color: inherit;
 }
 
 .case-index,

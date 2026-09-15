@@ -5,18 +5,20 @@ control to an autonomous agent.
 
 > Drafts and sends the appeals you approve — not legal or medical advice.
 
-The live app is at [festive-roadrunner-713.convex.site](https://festive-roadrunner-713.convex.site).
-The public repository is [github.com/Demiladepy/backstop](https://github.com/Demiladepy/backstop).
+**Live app:** [backstop-xi.vercel.app](https://backstop-xi.vercel.app)  
+**Repo:** [github.com/Demiladepy/backstop](https://github.com/Demiladepy/backstop)  
+**Demo script:** [DEMO.md](DEMO.md)  
+**Silent demo video:** [release asset](https://github.com/Demiladepy/backstop/releases/download/demo-video/backstop-hero-demo.webm)
 
 ## What it does
 
-1. Upload a fictional denial letter.
-2. Parse it with Firecrawl.
-3. Search and scrape the payer's public policy language.
+1. Open a sample medical-denial case (fictional denial letter + EOB).
+2. Parse documents with Firecrawl.
+3. Search and scrape public policy language.
 4. Draft a cited appeal with OpenAI.
 5. Send only after you approve.
-6. Thread the reply in AgentMail.
-7. Optionally watch a deadline/public page and prepare a public form up to submit.
+6. Thread replies with AgentMail (follow-ups still need approval).
+7. Optionally watch a deadline / public page and prepare a form up to submit.
 
 ## Local development
 
@@ -33,9 +35,13 @@ npm run lint
 npm test
 npm run build
 npx playwright test
+npx playwright test --config=e2e/live-vercel.config.ts
+npm run demo:record
 ```
 
 Keep Firecrawl, OpenAI, and AgentMail keys in Convex environment variables.
+
+Submission paste sheet: [SUBMISSION.md](SUBMISSION.md).
 
 ## Safety
 

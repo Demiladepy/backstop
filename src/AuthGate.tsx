@@ -202,7 +202,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
           <section className="landing-hero-center" aria-labelledby="auth-title">
             <div className="landing-hero-copy">
               <h1 className="landing-mega">BACKSTOP</h1>
-              <h2 id="auth-title">Begin without handing over credentials.</h2>
+              <h2 id="auth-title">From a medical denial to an appeal you control.</h2>
               <p className="auth-lede">
                 Drafts and sends the appeals you approve — not legal or medical advice.
               </p>
@@ -220,9 +220,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
                   <span>{signingIn ? 'Opening private demo…' : 'Enter private demo'}</span>
                   {!signingIn && <span aria-hidden="true">→</span>}
                 </button>
-                <a className="ghost-action" href="#how-it-works">
-                  See how it works
-                </a>
               </div>
 
               {error && (
@@ -283,8 +280,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
             <ol className="landing-steps">
               {[
                 [
-                  'Upload a sample denial',
-                  'Start with a fictional letter. Backstop reads it into visible evidence.',
+                  'Open a sample denial packet',
+                  'A fictional denial letter and EOB attach automatically. Backstop reads them into visible evidence.',
                 ],
                 [
                   'Find real policy language',

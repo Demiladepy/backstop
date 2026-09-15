@@ -15,7 +15,7 @@ test("anonymous entrance is responsive, keyboard focused, and error free", async
   const entrance = page.getByRole("button", { name: "Enter private demo" }).first();
   await expect(
     page.getByRole("heading", {
-      name: "Begin without handing over credentials.",
+      name: "From a medical denial to an appeal you control.",
     }),
   ).toBeVisible();
   await entrance.focus();

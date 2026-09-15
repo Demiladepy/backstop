@@ -1,0 +1,35 @@
+1
+00:00:00,000 --> 00:00:08,000
+Backstop turns a medical denial into a cited appeal you control.
+
+2
+00:00:08,000 --> 00:00:16,000
+Drafts and sends the appeals you approve — not legal or medical advice.
+
+3
+00:00:16,000 --> 00:00:28,000
+A sample case attaches a fictional denial letter and EOB. No real PHI.
+
+4
+00:00:28,000 --> 00:00:48,000
+Firecrawl parses and researches policy. OpenAI drafts from stored sources.
+
+5
+00:00:48,000 --> 00:01:05,000
+Unsupported claims stay marked unverified. Citations point at the evidence.
+
+6
+00:01:05,000 --> 00:01:25,000
+Approve is the only send gate. Record shows Firecrawl, OpenAI, and AgentMail.
+
+7
+00:01:25,000 --> 00:01:45,000
+A fictional payer reply still needs your approval before anything sends again.
+
+8
+00:01:45,000 --> 00:02:10,000
+Watch arms a deadline and fills a public form — submit is never clicked.
+
+9
+00:02:10,000 --> 00:02:30,000
+One case type: medical denials. Human approval is the backstop.

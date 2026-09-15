@@ -245,6 +245,97 @@ export const ensureDemoDeadline = mutation({
   },
 });
 
+const DEMO_BOARD_PREFIX = "Demo board —";
+
+/** Idempotent board fillers for judges — medical_denial only, no pipeline cost. */
+export const seedDemoCaseload = mutation({
+  args: {},
+  returns: v.object({
+    created: v.number(),
+    caseIds: v.array(v.id("cases")),
+  }),
+  handler: async (ctx) => {
+    const ownerId = await requireOwner(ctx);
+    const existing = await ctx.db
+      .query("cases")
+      .withIndex("by_ownerId", (q) => q.eq("ownerId", ownerId))
+      .take(50);
+    const already = existing.filter((row) =>
+      row.title.startsWith(DEMO_BOARD_PREFIX),
+    );
+    if (already.length >= 3) {
+      return {
+        created: 0,
+        caseIds: already.slice(0, 3).map((row) => row._id),
+      };
+    }
+
+    const now = Date.now();
+    const day = 86_400_000;
+    const templates = [
+      {
+        title: `${DEMO_BOARD_PREFIX}MRI denial needs review`,
+        status: "awaiting_approval" as const,
+        counterpartyName: "Aetna (fictional demo)",
+        counterpartyEmail: "appeals@example.com",
+        deadlineAt: now + 3 * day,
+        detail: "Demo caseload row: needs your review.",
+      },
+      {
+        title: `${DEMO_BOARD_PREFIX}PT visit still researching`,
+        status: "researching" as const,
+        counterpartyName: "Northstar Sample Health",
+        counterpartyEmail: "appeals@example.com",
+        deadlineAt: now + 12 * day,
+        detail: "Demo caseload row: policy research in progress.",
+      },
+      {
+        title: `${DEMO_BOARD_PREFIX}Imaging appeal awaiting reply`,
+        status: "awaiting_reply" as const,
+        counterpartyName: "Summit Care (fictional)",
+        counterpartyEmail: "appeals@example.com",
+        deadlineAt: now + 21 * day,
+        detail: "Demo caseload row: appeal sent, waiting on payer.",
+      },
+    ] as const;
+
+    const haveTitles = new Set(already.map((row) => row.title));
+    const caseIds = [...already.map((row) => row._id)];
+    let created = 0;
+
+    for (const template of templates) {
+      if (haveTitles.has(template.title)) continue;
+      const caseId = await ctx.db.insert("cases", {
+        ownerId,
+        title: template.title,
+        category: "medical_denial",
+        status: template.status,
+        counterpartyName: template.counterpartyName,
+        counterpartyEmail: template.counterpartyEmail,
+        deadlineAt: template.deadlineAt,
+        createdAt: now,
+        updatedAt: now,
+      });
+      await ctx.db.insert("auditLog", {
+        caseId,
+        ownerId,
+        actor: "user",
+        event: "case.created",
+        operationId: `demo:caseload:${caseId}`,
+        status: "succeeded",
+        entityType: "case",
+        entityId: caseId,
+        detail: template.detail,
+        createdAt: now,
+      });
+      caseIds.push(caseId);
+      created += 1;
+    }
+
+    return { created, caseIds };
+  },
+});
+
 export const attachDocument = mutation({
   args: {
     caseId: v.id("cases"),
