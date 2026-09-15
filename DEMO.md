@@ -12,11 +12,11 @@ Positioning line, said once:
 
 0:00–0:20 — Open the live site. **Enter private demo**. **Start a sample
 case**. Keep defaults (deadline is already 14 days out). **Open case file** —
-the fictional denial attaches automatically.
+the fictional denial letter and EOB attach automatically.
 
 0:20–1:00 — Stay on **Evidence** / **Appeal**. Watch parse → policy research →
-cited draft appear live. Call out `[UNVERIFIED]` if any paragraph lacks a
-source.
+cited draft appear live. Note both documents in Evidence. Call out unverified
+claims if any paragraph lacks a source.
 
 1:00–1:40 — Show citations (click [N] to flash the note). **Approve and send**.
 Open **Email** and **Record** (sponsor-labeled timeline). Optionally **Simulate

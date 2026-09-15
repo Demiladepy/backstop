@@ -49,6 +49,47 @@ function formatDate(timestamp: number, includeTime = false) {
   }).format(timestamp)
 }
 
+function daysUntilDeadline(deadlineAt: number, now = Date.now()) {
+  return Math.ceil((deadlineAt - now) / 86_400_000)
+}
+
+function deadlineLabel(deadlineAt: number | undefined, now = Date.now()) {
+  if (!deadlineAt) return { text: 'No deadline', urgency: 'none' as const }
+  const days = daysUntilDeadline(deadlineAt, now)
+  if (days < 0) return { text: `${Math.abs(days)}d overdue`, urgency: 'overdue' as const }
+  if (days === 0) return { text: 'Due today', urgency: 'soon' as const }
+  if (days <= 7) return { text: `${days}d left`, urgency: 'soon' as const }
+  return { text: `${days}d left`, urgency: 'ok' as const }
+}
+
+function boardCaseRank(status: Doc<'cases'>['status']) {
+  if (status === 'awaiting_approval') return 0
+  if (status === 'error') return 1
+  if (status === 'drafting' || status === 'researching' || status === 'parsing') return 2
+  return 3
+}
+
+function sortBoardCases(cases: Doc<'cases'>[]) {
+  return [...cases].sort((a, b) => {
+    const rank = boardCaseRank(a.status) - boardCaseRank(b.status)
+    if (rank !== 0) return rank
+    const deadlineA = a.deadlineAt ?? Number.MAX_SAFE_INTEGER
+    const deadlineB = b.deadlineAt ?? Number.MAX_SAFE_INTEGER
+    if (deadlineA !== deadlineB) return deadlineA - deadlineB
+    return b.updatedAt - a.updatedAt
+  })
+}
+
+function documentKindLabel(kind: Doc<'documents'>['kind'] | undefined, fileName: string) {
+  if (kind === 'denial_letter') return 'Denial letter'
+  if (kind === 'eob') return 'EOB'
+  if (kind === 'bill') return 'Bill'
+  if (kind === 'policy') return 'Policy file'
+  if (/eob/i.test(fileName)) return 'EOB'
+  if (/denial/i.test(fileName)) return 'Denial letter'
+  return 'Document'
+}
+
 /** Document sources first, then policy — shared numbering for Evidence + Appeal. */
 function orderedSources(sources: Doc<'sources'>[]) {
   const documents = sources.filter((source) => source.kind === 'document')
@@ -232,6 +273,9 @@ function CaseBoard({
     return <BoardSkeleton />
   }
 
+  const ordered = sortBoardCases(cases)
+  const needsReview = ordered.filter((item) => item.status === 'awaiting_approval')
+
   return (
     <section className="board page-enter" aria-labelledby="board-title">
       <div className="board-canvas">
@@ -264,6 +308,22 @@ function CaseBoard({
           </button>
         </header>
 
+        {needsReview.length > 0 && (
+          <div className="board-queue" role="status">
+            <p className="props-label">Needs your review</p>
+            <strong>
+              {needsReview.length} {needsReview.length === 1 ? 'case' : 'cases'} waiting for approval
+            </strong>
+            <button
+              className="secondary-action"
+              type="button"
+              onClick={() => onSelect(needsReview[0]._id)}
+            >
+              Open next →
+            </button>
+          </div>
+        )}
+
         <div className="board-register">
           <div className="register-heading">
             <span>Cases</span>
@@ -285,22 +345,27 @@ function CaseBoard({
             </div>
           ) : (
             <ol className="case-list">
-              {cases.map((item, index) => (
-                <li key={item._id}>
-                  <button type="button" onClick={() => onSelect(item._id)}>
-                    <span className="case-index">{String(index + 1).padStart(2, '0')}</span>
-                    <span className="case-title">
-                      <strong>{item.title}</strong>
-                      <small>{item.counterpartyName ?? 'Payer not named'}</small>
-                    </span>
-                    <span className={`status-signal status-${item.status}`}>
-                      {statusCopy[item.status]}
-                    </span>
-                    <span className="case-date">{formatDate(item.updatedAt)}</span>
-                    <span className="arrow" aria-hidden="true">→</span>
-                  </button>
-                </li>
-              ))}
+              {ordered.map((item, index) => {
+                const deadline = deadlineLabel(item.deadlineAt)
+                return (
+                  <li key={item._id}>
+                    <button type="button" onClick={() => onSelect(item._id)}>
+                      <span className="case-index">{String(index + 1).padStart(2, '0')}</span>
+                      <span className="case-title">
+                        <strong>{item.title}</strong>
+                        <small>{item.counterpartyName ?? 'Payer not named'}</small>
+                      </span>
+                      <span className={`status-signal status-${item.status}`}>
+                        {statusCopy[item.status]}
+                      </span>
+                      <span className={`case-deadline urgency-${deadline.urgency}`}>
+                        {deadline.text}
+                      </span>
+                      <span className="arrow" aria-hidden="true">→</span>
+                    </button>
+                  </li>
+                )
+              })}
             </ol>
           )}
         </div>
@@ -336,7 +401,7 @@ function Intake({
   onCreated: (id: Id<'cases'>) => void
 }) {
   const createCase = useMutation(api.cases.createCase)
-  const seedSampleDenial = useAction(api.sampleDenial.seedSampleDenial)
+  const seedSamplePacket = useAction(api.sampleDenial.seedSamplePacket)
   const [title, setTitle] = useState('Sample denial — outpatient MRI')
   const [payer, setPayer] = useState('Aetna (fictional demo)')
   const [email, setEmail] = useState('appeals@example.com')
@@ -364,7 +429,7 @@ function Intake({
         counterpartyEmail: email,
         deadlineAt: deadline ? new Date(`${deadline}T12:00:00`).getTime() : undefined,
       })
-      await seedSampleDenial({ caseId })
+      await seedSamplePacket({ caseId })
       onCreated(caseId)
     } catch (caught) {
       setError(readableError(caught))
@@ -383,8 +448,8 @@ function Intake({
             <p className="kicker">New case</p>
             <h1 id="intake-title">Begin with the envelope.</h1>
             <p className="intake-lede">
-              Who issued the denial? Opening the case attaches the fictional
-              sample letter and starts parse → research → draft automatically.
+              Who issued the denial? Opening the case attaches a fictional
+              denial letter and EOB, then starts parse → research → draft.
               You still approve before anything is sent.
             </p>
           </header>
@@ -734,7 +799,7 @@ function EvidenceView({
 }) {
   const generateUploadUrl = useMutation(api.cases.generateUploadUrl)
   const attachDocument = useMutation(api.cases.attachDocument)
-  const seedSampleDenial = useAction(api.sampleDenial.seedSampleDenial)
+  const seedSamplePacket = useAction(api.sampleDenial.seedSamplePacket)
   const findPolicy = useAction(api.findPolicy.findPolicy)
   const fileInput = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
@@ -765,7 +830,7 @@ function EvidenceView({
     setError('')
     setSeeding(true)
     try {
-      await seedSampleDenial({ caseId: detail.case._id })
+      await seedSamplePacket({ caseId: detail.case._id })
     } catch (caught) {
       setError(readableError(caught))
     } finally {
@@ -830,10 +895,10 @@ function EvidenceView({
             >
               <span className="document-corner" />
               <strong>
-                {seeding ? 'Attaching the demo letter…' : 'Use the fictional demo letter'}
+                {seeding ? 'Attaching the demo packet…' : 'Use the fictional demo packet'}
               </strong>
-              <small>Attaches sample-denial.html and starts parse → research → draft</small>
-              <span>One click · no real PHI</span>
+              <small>Attaches denial + EOB and starts parse → research → draft</small>
+              <span>Two files · no real PHI</span>
             </button>
             <button
               className="secondary-action"
@@ -848,7 +913,14 @@ function EvidenceView({
               href="/samples/sample-denial.html"
               download="backstop-fictional-denial.html"
             >
-              Preview the fictional demo letter ↘
+              Preview denial letter ↘
+            </a>
+            <a
+              className="sample-download"
+              href="/samples/sample-eob.html"
+              download="backstop-fictional-eob.html"
+            >
+              Preview sample EOB ↘
             </a>
           </>
         ) : (
@@ -862,6 +934,7 @@ function EvidenceView({
                 </div>
                 <div>
                   <strong>{document.fileName}</strong>
+                  <span className="document-kind">{documentKindLabel(document.kind, document.fileName)}</span>
                   <span className={`document-status status-${document.status}`}>
                     {document.status === 'parsing' ? 'Reading now' : document.status}
                   </span>
@@ -1002,7 +1075,7 @@ function AppealView({
 
   const sourceNumbers = useMemo(() => sourceNumberMap(detail.sources), [detail.sources])
   const sourcesOrdered = useMemo(() => orderedSources(detail.sources), [detail.sources])
-  const denialSource = detail.sources.find((source) => source.kind === 'document')
+  const denialSources = detail.sources.filter((source) => source.kind === 'document')
   const isFollowUp =
     Boolean(latest) &&
     latest!.status === 'pending_approval' &&
@@ -1085,11 +1158,18 @@ function AppealView({
   return (
     <div className="appeal-layout">
       <div className="appeal-reading">
-        {denialSource && (
-          <aside className="denial-compare" aria-label="Denial excerpt">
-            <p className="props-label">Denial</p>
-            <p className="denial-compare-title">{denialSource.title}</p>
-            <blockquote>{denialSource.excerpt.slice(0, 420)}{denialSource.excerpt.length > 420 ? '…' : ''}</blockquote>
+        {denialSources.length > 0 && (
+          <aside className="denial-compare" aria-label="Case documents">
+            <p className="props-label">Case documents</p>
+            {denialSources.map((source) => (
+              <div className="denial-compare-item" key={source._id}>
+                <p className="denial-compare-title">{source.title}</p>
+                <blockquote>
+                  {source.excerpt.slice(0, denialSources.length > 1 ? 220 : 420)}
+                  {source.excerpt.length > (denialSources.length > 1 ? 220 : 420) ? '…' : ''}
+                </blockquote>
+              </div>
+            ))}
             <button className="text-button" type="button" onClick={() => setTab('evidence')}>
               Open full evidence →
             </button>

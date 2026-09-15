@@ -250,6 +250,14 @@ export const attachDocument = mutation({
     caseId: v.id("cases"),
     storageId: v.id("_storage"),
     fileName: v.string(),
+    kind: v.optional(
+      v.union(
+        v.literal("denial_letter"),
+        v.literal("bill"),
+        v.literal("eob"),
+        v.literal("policy"),
+      ),
+    ),
   },
   returns: v.id("documents"),
   handler: async (ctx, args) => {
@@ -303,6 +311,7 @@ export const attachDocument = mutation({
       caseId: args.caseId,
       ownerId,
       storageId: args.storageId,
+      kind: args.kind,
       fileName,
       mimeType,
       size: metadata.size,
@@ -323,7 +332,7 @@ export const attachDocument = mutation({
       status: "succeeded",
       entityType: "document",
       entityId: documentId,
-      detail: `Attached ${fileName}; parsing scheduled.`,
+      detail: `Attached ${fileName}${args.kind ? ` (${args.kind})` : ""}; parsing scheduled.`,
       createdAt: now,
     });
     await ctx.scheduler.runAfter(

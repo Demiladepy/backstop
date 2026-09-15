@@ -103,6 +103,14 @@ action is audited.
   technical ids collapsed.
 - Workspace chrome: light Obsidian three-pane structure on paper brand.
 
+### Day 4 — Multi-doc packet + board intelligence
+
+- Sample packet seeds fictional denial + EOB (`seedSamplePacket`); both parse
+  and can be cited before approve.
+- Policy research uses all document excerpts, not only the first.
+- Case board sorts needs-review first, shows deadline urgency, and a review queue strip.
+- Evidence tiles label document kinds; appeal compare shows every document source.
+
 ## Submission links
 
 - Live app: https://backstop-xi.vercel.app

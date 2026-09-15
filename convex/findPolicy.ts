@@ -305,13 +305,17 @@ async function runResearch(
   });
 
   try {
-    const documentSource = context.sources.find(
+    const documentSources = context.sources.filter(
       (source) => source.kind === "document",
     );
-    const documentExcerpt =
-      documentSource?.excerpt?.trim() ||
-      documentSource?.content?.slice(0, 2_000) ||
-      "";
+    const documentExcerpt = documentSources
+      .map(
+        (source) =>
+          source.excerpt?.trim() || source.content?.slice(0, 2_000) || "",
+      )
+      .filter(Boolean)
+      .join("\n\n")
+      .slice(0, 4_000);
 
     const candidates = await collectCandidates({
       title: context.case.title,

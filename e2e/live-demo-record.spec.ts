@@ -44,7 +44,7 @@ test("record DEMO.md hero path", async ({ page }) => {
   await page.getByRole("button", { name: /Evidence/ }).click();
   await pause(2_000);
   const seedBtn = page.getByRole("button", {
-    name: /Use the fictional demo letter/i,
+    name: /Use the fictional demo (letter|packet)/i,
   });
   if (await seedBtn.isVisible().catch(() => false)) {
     await seedBtn.click();

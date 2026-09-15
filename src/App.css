@@ -291,6 +291,29 @@ button:disabled {
   line-height: 1.5;
 }
 
+.board-queue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm) var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border: var(--hairline);
+  border-left: 3px solid var(--signal-deep);
+  background: var(--surface-2);
+}
+
+.board-queue strong {
+  flex: 1;
+  min-width: 12rem;
+  font-size: .92rem;
+}
+
+.board-queue .secondary-action {
+  min-height: 36px;
+  padding: .4rem .75rem;
+  font-size: .78rem;
+}
+
 .board-intro h1,
 .intake h1,
 .not-found h1 {
@@ -473,10 +496,25 @@ button:disabled {
 }
 
 .case-index,
-.case-date {
+.case-date,
+.case-deadline {
   color: var(--faint);
   font-size: .72rem;
   font-variant-numeric: tabular-nums;
+}
+
+.case-deadline.urgency-soon {
+  color: var(--signal-ink);
+  font-weight: 700;
+}
+
+.case-deadline.urgency-overdue {
+  color: var(--danger);
+  font-weight: 750;
+}
+
+.case-deadline.urgency-ok {
+  color: var(--muted);
 }
 
 .case-title {
@@ -1259,6 +1297,14 @@ dd {
   text-transform: capitalize;
 }
 
+.document-kind {
+  color: var(--faint);
+  font-size: .62rem;
+  font-weight: 750;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
 .document-tile small {
   grid-column: 1 / -1;
 }
@@ -1548,6 +1594,18 @@ dd {
   font-size: .78rem;
   font-weight: 650;
   line-height: 1.35;
+}
+
+.denial-compare-item {
+  display: grid;
+  gap: .35rem;
+  padding-bottom: var(--space-sm);
+  border-bottom: var(--hairline);
+}
+
+.denial-compare-item:last-of-type {
+  border-bottom: 0;
+  padding-bottom: 0;
 }
 
 .denial-compare blockquote {
@@ -3898,7 +3956,7 @@ dd {
   }
 
   .case-list .status-signal,
-  .case-list .case-date { display: none; }
+  .case-list .case-deadline { display: none; }
 
   .field-pair { grid-template-columns: 1fr; }
 
