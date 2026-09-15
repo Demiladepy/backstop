@@ -92,6 +92,17 @@ action is audited.
   component workpool missing the key).
 - Re-verified live hero smoke on Vercel after deploy.
 
+### Day 3 — Trust UX + reply-loop handoff
+
+- Appeal: denial excerpt beside draft; citation chips highlight notes and link
+  to Evidence / original URL; shared [N] numbering with Evidence; unverified
+  count in the review margin; follow-up drafts labeled as such.
+- Email: after simulate / inbound, banner to review & approve the follow-up
+  (approve remains the only send gate).
+- Record: vendor-labeled timeline (Firecrawl / OpenAI / AgentMail / You) with
+  technical ids collapsed.
+- Workspace chrome: light Obsidian three-pane structure on paper brand.
+
 ## Submission links
 
 - Live app: https://backstop-xi.vercel.app

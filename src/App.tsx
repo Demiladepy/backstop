@@ -49,6 +49,77 @@ function formatDate(timestamp: number, includeTime = false) {
   }).format(timestamp)
 }
 
+/** Document sources first, then policy — shared numbering for Evidence + Appeal. */
+function orderedSources(sources: Doc<'sources'>[]) {
+  const documents = sources.filter((source) => source.kind === 'document')
+  const policy = sources.filter((source) => source.kind === 'policy')
+  const other = sources.filter((source) => source.kind !== 'document' && source.kind !== 'policy')
+  return [...documents, ...policy, ...other]
+}
+
+function sourceNumberMap(sources: Doc<'sources'>[]) {
+  return new Map(orderedSources(sources).map((source, index) => [source._id, index + 1]))
+}
+
+function displayParagraphText(text: string) {
+  return text.replace(/^\[UNVERIFIED\]\s*/i, '').trim()
+}
+
+function humanizeEvent(event: string) {
+  return event
+    .replace(/^external\./, '')
+    .replaceAll('.', ' · ')
+    .replaceAll('_', ' ')
+    .replace(/^\w/, (letter) => letter.toUpperCase())
+}
+
+function describeAuditEvent(event: string): { vendor: string; title: string } {
+  const map: Record<string, { vendor: string; title: string }> = {
+    'case.created': { vendor: 'You', title: 'Case opened' },
+    'demo.deadline_set': { vendor: 'System', title: 'Demo deadline set' },
+    'document.attached': { vendor: 'You', title: 'Document attached' },
+    'draft.approved': { vendor: 'You', title: 'Draft approved' },
+    'draft.edited': { vendor: 'You', title: 'Draft edited' },
+    'draft.rejected': { vendor: 'You', title: 'Draft rejected' },
+    'external.firecrawl.parse': { vendor: 'Firecrawl', title: 'Document parsed' },
+    'external.firecrawl.policy_research': { vendor: 'Firecrawl', title: 'Policy researched' },
+    'external.firecrawl.monitor': { vendor: 'Firecrawl', title: 'Page monitored' },
+    'external.firecrawl.interact': { vendor: 'Firecrawl', title: 'Public form filled' },
+    'external.openai.draft_appeal': { vendor: 'OpenAI', title: 'Appeal drafted' },
+    'external.agentmail.send_queued': { vendor: 'AgentMail', title: 'Send queued' },
+    'external.agentmail.send': { vendor: 'AgentMail', title: 'Message sent' },
+    'external.agentmail.inbound_received': { vendor: 'AgentMail', title: 'Inbound received' },
+    'demo.inbound_simulated': { vendor: 'Demo', title: 'Fictional reply injected' },
+  }
+  if (map[event]) return map[event]
+  if (event.startsWith('external.firecrawl')) {
+    return { vendor: 'Firecrawl', title: humanizeEvent(event) }
+  }
+  if (event.startsWith('external.openai')) {
+    return { vendor: 'OpenAI', title: humanizeEvent(event) }
+  }
+  if (event.startsWith('external.agentmail')) {
+    return { vendor: 'AgentMail', title: humanizeEvent(event) }
+  }
+  if (event.startsWith('demo.')) {
+    return { vendor: 'Demo', title: humanizeEvent(event) }
+  }
+  if (event.startsWith('draft.') || event.startsWith('case.') || event.startsWith('document.')) {
+    return { vendor: 'You', title: humanizeEvent(event) }
+  }
+  return { vendor: 'System', title: humanizeEvent(event) }
+}
+
+function highlightCitationNote(sourceId: string) {
+  const note = document.getElementById(`source-note-${sourceId}`)
+  if (!note) return
+  note.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  note.classList.remove('is-flash')
+  void note.offsetWidth
+  note.classList.add('is-flash')
+  window.setTimeout(() => note.classList.remove('is-flash'), 1600)
+}
+
 function Mark({ name }: { name: string }) {
   if (name === 'B' || name === 'Backstop') {
     return <BrandMark size={26} />
@@ -426,9 +497,12 @@ function CaseWorkspace({
   }
 
   return (
-    <section className="case-workspace page-enter">
+    <section
+      className={`case-workspace page-enter${tab === 'appeal' ? ' is-appeal' : ''}`}
+    >
       <aside className="case-rail" aria-label="Case navigation">
         <button className="back-button" type="button" onClick={onBoard}>← All cases</button>
+        <p className="rail-label">Cases</p>
         <div className="rail-list">
           {cases.map((item, index) => (
             <button
@@ -476,48 +550,108 @@ function CaseWorkspace({
             <AppealView
               key={`${detail.drafts[0]?._id ?? 'empty'}-${detail.drafts[0]?.updatedAt ?? 0}`}
               detail={detail}
+              setTab={setTab}
             />
           )}
-          {tab === 'email' && <EmailView detail={detail} thread={thread} />}
+          {tab === 'email' && <EmailView detail={detail} thread={thread} setTab={setTab} />}
           {tab === 'watch' && <WatchView detail={detail} />}
           {tab === 'record' && <AuditView audit={detail.audit} />}
         </div>
       </div>
+
+      {tab !== 'appeal' && (
+        <CaseProperties detail={detail} setTab={setTab} />
+      )}
     </section>
   )
 }
 
 function CaseHeader({ caseRow }: { caseRow: Doc<'cases'> }) {
+  return (
+    <header className="case-header">
+      <div className="case-heading">
+        <p className="kicker">{statusCopy[caseRow.status]}</p>
+        <h1>{caseRow.title}</h1>
+      </div>
+    </header>
+  )
+}
+
+function CaseProperties({
+  detail,
+  setTab,
+}: {
+  detail: NonNullable<ReturnType<typeof useQuery<typeof api.cases.getCase>>>
+  setTab: (tab: CaseTab) => void
+}) {
+  const caseRow = detail.case
   const activeIndex = Math.max(
     0,
     workflow.findIndex((step) => step.statuses.includes(caseRow.status)),
   )
+  const next = getNextStep(detail)
+  const latestDraft = detail.drafts[0]
+
   return (
-    <header className="case-header">
-      <div className="case-heading">
-        <p className="kicker">
-          {statusCopy[caseRow.status]}
-        </p>
-        <h1>{caseRow.title}</h1>
-        <dl>
-          <div><dt>Payer</dt><dd>{caseRow.counterpartyName ?? 'Not provided'}</dd></div>
-          <div><dt>Appeal email</dt><dd>{caseRow.counterpartyEmail ?? 'Not provided'}</dd></div>
-          <div><dt>Opened</dt><dd>{formatDate(caseRow.createdAt)}</dd></div>
-          <div><dt>Deadline</dt><dd>{caseRow.deadlineAt ? formatDate(caseRow.deadlineAt) : 'No date set'}</dd></div>
-        </dl>
+    <aside className="case-props" aria-label="Case properties">
+      <p className="props-label">Properties</p>
+
+      <dl className="props-facts">
+        <div>
+          <dt>Status</dt>
+          <dd>{statusCopy[caseRow.status]}</dd>
+        </div>
+        <div>
+          <dt>Payer</dt>
+          <dd>{caseRow.counterpartyName ?? 'Not provided'}</dd>
+        </div>
+        <div>
+          <dt>Appeal email</dt>
+          <dd>{caseRow.counterpartyEmail ?? 'Not provided'}</dd>
+        </div>
+        <div>
+          <dt>Opened</dt>
+          <dd>{formatDate(caseRow.createdAt)}</dd>
+        </div>
+        <div>
+          <dt>Deadline</dt>
+          <dd>{caseRow.deadlineAt ? formatDate(caseRow.deadlineAt) : 'No date set'}</dd>
+        </div>
+      </dl>
+
+      <div className="props-block">
+        <p className="props-label">Counts</p>
+        <ul className="props-counts">
+          <li><span>Documents</span><strong>{detail.documents.length}</strong></li>
+          <li><span>Policy sources</span><strong>{detail.sources.filter((s) => s.kind === 'policy').length}</strong></li>
+          <li><span>Cited claims</span><strong>{latestDraft?.paragraphs.filter((p) => p.verification === 'cited').length ?? 0}</strong></li>
+          <li><span>Messages</span><strong>{detail.messages.length}</strong></li>
+        </ul>
       </div>
-      <ol className="workflow-line" aria-label={`Current status: ${statusCopy[caseRow.status]}`}>
-        {workflow.map((step, index) => (
-          <li
-            key={step.label}
-            className={index < activeIndex ? 'complete' : index === activeIndex ? 'current' : ''}
-          >
-            <span>{String(index + 1).padStart(2, '0')}</span>
-            {step.label}
-          </li>
-        ))}
-      </ol>
-    </header>
+
+      <div className="props-block">
+        <p className="props-label">Workflow</p>
+        <ol className="props-workflow" aria-label={`Current status: ${statusCopy[caseRow.status]}`}>
+          {workflow.map((step, index) => (
+            <li
+              key={step.label}
+              className={index < activeIndex ? 'complete' : index === activeIndex ? 'current' : ''}
+            >
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              {step.label}
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <div className="props-next">
+        <p className="props-label">Next</p>
+        <p className="props-next-title">{next.title}</p>
+        <button className="secondary-action" type="button" onClick={() => setTab(next.tab)}>
+          {next.action} →
+        </button>
+      </div>
+    </aside>
   )
 }
 
@@ -528,7 +662,6 @@ function CaseOverview({
   detail: NonNullable<ReturnType<typeof useQuery<typeof api.cases.getCase>>>
   setTab: (tab: CaseTab) => void
 }) {
-  const latestDraft = detail.drafts[0]
   const next = getNextStep(detail)
   return (
     <div className="overview-grid">
@@ -540,34 +673,21 @@ function CaseOverview({
           {next.action} <span aria-hidden="true">→</span>
         </button>
       </section>
-      <section className="case-sheet" aria-label="Case summary">
-        <div className="sheet-folio">
-          <span>Summary</span>
-          <span>{statusCopy[detail.case.status]}</span>
-        </div>
-        <h3>{detail.case.title}</h3>
-        <p className="sheet-deck">
-          Prepared for {detail.case.counterpartyName ?? 'the payer'}.
-        </p>
-        <dl className="sheet-facts">
-          <div><dt>Documents</dt><dd>{detail.documents.length}</dd></div>
-          <div><dt>Sources</dt><dd>{detail.sources.filter((source) => source.kind === 'policy').length}</dd></div>
-          <div><dt>Cited</dt><dd>{latestDraft?.paragraphs.filter((p) => p.verification === 'cited').length ?? 0}</dd></div>
-          <div><dt>Messages</dt><dd>{detail.messages.length}</dd></div>
-        </dl>
-      </section>
       <section className="recent-record">
         <div className="section-heading">
           <h3>Recent record</h3>
           <button type="button" onClick={() => setTab('record')}>Full timeline</button>
         </div>
-        {detail.audit.slice(0, 4).map((entry) => (
+        {detail.audit.slice(0, 6).map((entry) => (
           <div className="record-line" key={entry._id}>
             <Mark name={entry.actor} />
-            <p><strong>{humanizeEvent(entry.event)}</strong><span>{entry.detail}</span></p>
+            <p><strong>{describeAuditEvent(entry.event).title}</strong><span>{entry.detail}</span></p>
             <time>{formatDate(entry.createdAt, true)}</time>
           </div>
         ))}
+        {detail.audit.length === 0 && (
+          <p className="empty-hint">Actions on this case will appear here as an audit trail.</p>
+        )}
       </section>
     </div>
   )
@@ -668,6 +788,7 @@ function EvidenceView({
 
   const policySources = detail.sources.filter((source) => source.kind === 'policy')
   const documentSources = detail.sources.filter((source) => source.kind === 'document')
+  const numbers = sourceNumberMap(detail.sources)
 
   return (
     <div className="evidence-layout">
@@ -752,9 +873,9 @@ function EvidenceView({
           </div>
         )}
         {documentSources.map((source) => (
-          <details className="extracted-source" key={source._id}>
+          <details className="extracted-source" id={`source-${source._id}`} key={source._id}>
             <summary>
-              <span>Parsed text</span>
+              <span>[{numbers.get(source._id) ?? '?'}] Parsed text</span>
               <strong>{source.title}</strong>
               <em>Open excerpt</em>
             </summary>
@@ -802,9 +923,9 @@ function EvidenceView({
           </div>
         )}
         <div className="source-stack">
-          {policySources.map((source, index) => (
+          {policySources.map((source) => (
             <article className="source-sheet" id={`source-${source._id}`} key={source._id}>
-              <div className="source-number">[{index + 1}]</div>
+              <div className="source-number">[{numbers.get(source._id) ?? '?'}]</div>
               <div>
                 <p className="source-publisher">{source.publisher ?? 'Public policy source'}</p>
                 <h3>{source.title}</h3>
@@ -856,12 +977,14 @@ function uploadFile(
 
 function AppealView({
   detail,
+  setTab,
 }: {
   detail: {
     case: Doc<'cases'>
     drafts: Doc<'drafts'>[]
     sources: Doc<'sources'>[]
   }
+  setTab: (tab: CaseTab) => void
 }) {
   const draftAppeal = useAction(api.draftAppeal.draftAppeal)
   const editDraft = useMutation(api.cases.editDraft)
@@ -877,10 +1000,14 @@ function AppealView({
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
 
-  const sourceNumbers = useMemo(
-    () => new Map(detail.sources.map((source, index) => [source._id, index + 1])),
-    [detail.sources],
-  )
+  const sourceNumbers = useMemo(() => sourceNumberMap(detail.sources), [detail.sources])
+  const sourcesOrdered = useMemo(() => orderedSources(detail.sources), [detail.sources])
+  const denialSource = detail.sources.find((source) => source.kind === 'document')
+  const isFollowUp =
+    Boolean(latest) &&
+    latest!.status === 'pending_approval' &&
+    detail.drafts.some((draft, index) => index > 0 && (draft.status === 'sent' || draft.status === 'approved'))
+  const unverifiedCount = paragraphs.filter((paragraph) => paragraph.verification === 'unverified').length
 
   const run = async (label: string, work: () => Promise<unknown>) => {
     setError('')
@@ -916,7 +1043,7 @@ function AppealView({
               : (
                 <>
                   The draft will use only sources in this case. Any unsupported paragraph
-                  is labeled <strong>[UNVERIFIED]</strong> before you see it.
+                  is labeled <strong>unverified</strong> before you see it.
                 </>
               )}
           </p>
@@ -957,68 +1084,94 @@ function AppealView({
 
   return (
     <div className="appeal-layout">
-      <article className="appeal-paper">
-        <div className="paper-folio">
-          <span>Draft appeal · {latest.status.replaceAll('_', ' ')}</span>
-          <span>{formatDate(latest.updatedAt)}</span>
-        </div>
-        <label className="subject-line">
-          <span>Subject</span>
-          {editing ? (
-            <input value={subject} onChange={(event) => setSubject(event.target.value)} maxLength={300} />
-          ) : (
-            <strong>{latest.subject}</strong>
-          )}
-        </label>
-        <div className="letter-address">
-          <span>To</span>
-          <p><strong>{detail.case.counterpartyName}</strong><br />{detail.case.counterpartyEmail}</p>
-        </div>
-        <div className="draft-body">
-          {paragraphs.map((paragraph, index) => (
-            <div className={`draft-paragraph ${paragraph.verification}`} key={`${latest._id}-${index}`}>
-              {editing ? (
-                <textarea
-                  value={paragraph.text}
-                  aria-label={`Paragraph ${index + 1}`}
-                  onChange={(event) => setParagraphs((current) =>
-                    current.map((item, itemIndex) =>
-                      itemIndex === index ? { ...item, text: event.target.value } : item,
-                    ),
-                  )}
-                />
-              ) : (
-                <p>{paragraph.text}</p>
-              )}
-              <aside aria-label={`Citations for paragraph ${index + 1}`}>
-                {paragraph.verification === 'unverified' ? (
-                  <span className="unverified-tag">Unverified claim</span>
+      <div className="appeal-reading">
+        {denialSource && (
+          <aside className="denial-compare" aria-label="Denial excerpt">
+            <p className="props-label">Denial</p>
+            <p className="denial-compare-title">{denialSource.title}</p>
+            <blockquote>{denialSource.excerpt.slice(0, 420)}{denialSource.excerpt.length > 420 ? '…' : ''}</blockquote>
+            <button className="text-button" type="button" onClick={() => setTab('evidence')}>
+              Open full evidence →
+            </button>
+          </aside>
+        )}
+        <article className="appeal-paper">
+          <div className="paper-folio">
+            <span>
+              {isFollowUp ? 'Follow-up draft' : 'Draft appeal'} · {latest.status.replaceAll('_', ' ')}
+            </span>
+            <span>{formatDate(latest.updatedAt)}</span>
+          </div>
+          <label className="subject-line">
+            <span>Subject</span>
+            {editing ? (
+              <input value={subject} onChange={(event) => setSubject(event.target.value)} maxLength={300} />
+            ) : (
+              <strong>{latest.subject}</strong>
+            )}
+          </label>
+          <div className="letter-address">
+            <span>To</span>
+            <p><strong>{detail.case.counterpartyName}</strong><br />{detail.case.counterpartyEmail}</p>
+          </div>
+          <div className="draft-body">
+            {paragraphs.map((paragraph, index) => (
+              <div className={`draft-paragraph ${paragraph.verification}`} key={`${latest._id}-${index}`}>
+                {editing ? (
+                  <textarea
+                    value={paragraph.text}
+                    aria-label={`Paragraph ${index + 1}`}
+                    onChange={(event) => setParagraphs((current) =>
+                      current.map((item, itemIndex) =>
+                        itemIndex === index ? { ...item, text: event.target.value } : item,
+                      ),
+                    )}
+                  />
                 ) : (
-                  paragraph.sourceIds.map((sourceId) => (
-                    <a href={`#source-note-${sourceId}`} key={sourceId}>
-                      [{sourceNumbers.get(sourceId) ?? '?'}]
-                    </a>
-                  ))
+                  <p>{displayParagraphText(paragraph.text)}</p>
                 )}
-              </aside>
-            </div>
-          ))}
-        </div>
-        <div className="paper-signoff">
-          <span>Prepared by Backstop</span>
-          <p>For review by the case owner. Not legal or medical advice.</p>
-        </div>
-      </article>
+                <aside aria-label={`Citations for paragraph ${index + 1}`}>
+                  {paragraph.verification === 'unverified' ? (
+                    <span className="unverified-tag">Unverified claim</span>
+                  ) : (
+                    paragraph.sourceIds.map((sourceId) => (
+                      <button
+                        type="button"
+                        className="cite-chip"
+                        key={sourceId}
+                        onClick={() => highlightCitationNote(sourceId)}
+                      >
+                        [{sourceNumbers.get(sourceId) ?? '?'}]
+                      </button>
+                    ))
+                  )}
+                </aside>
+              </div>
+            ))}
+          </div>
+          <div className="paper-signoff">
+            <span>Prepared by Backstop</span>
+            <p>For review by the case owner. Not legal or medical advice.</p>
+          </div>
+        </article>
+      </div>
 
       <aside className="review-margin">
         <div className="review-status">
           <span>Review state</span>
-          <strong>{statusCopy[detail.case.status]}</strong>
+          <strong>{isFollowUp ? 'Follow-up needs approval' : statusCopy[detail.case.status]}</strong>
           <p>
             {canReview
-              ? 'Nothing leaves Backstop until you approve this exact draft.'
+              ? isFollowUp
+                ? 'A reply arrived. This follow-up still will not send until you approve it.'
+                : 'Nothing leaves Backstop until you approve this exact draft.'
               : 'This version is locked because its review state has changed.'}
           </p>
+          {unverifiedCount > 0 && (
+            <p className="unverified-count" role="status">
+              {unverifiedCount} unverified {unverifiedCount === 1 ? 'claim' : 'claims'} — review before approving.
+            </p>
+          )}
         </div>
         {canReview && (
           <div className="review-actions">
@@ -1049,7 +1202,11 @@ function AppealView({
                   disabled={Boolean(busy) || !canSend}
                   onClick={() => void run('approve', () => approveDraft({ draftId: latest._id }))}
                 >
-                  {busy === 'approve' ? 'Recording approval…' : 'Approve and send appeal'}
+                  {busy === 'approve'
+                    ? 'Recording approval…'
+                    : isFollowUp
+                      ? 'Approve and send follow-up'
+                      : 'Approve and send appeal'}
                 </button>
                 <button className="secondary-action" type="button" onClick={() => setEditing(true)}>
                   Edit exact language
@@ -1085,10 +1242,21 @@ function AppealView({
         )}
         <div className="citation-register">
           <span>Citation notes</span>
-          {detail.sources.map((source, index) => (
+          {sourcesOrdered.map((source) => (
             <div id={`source-note-${source._id}`} key={source._id}>
-              <b>[{index + 1}]</b>
-              <p><strong>{source.title}</strong>{source.excerpt.slice(0, 170)}{source.excerpt.length > 170 ? '…' : ''}</p>
+              <b>[{sourceNumbers.get(source._id) ?? '?'}]</b>
+              <p>
+                <strong>{source.title}</strong>
+                {source.excerpt.slice(0, 170)}{source.excerpt.length > 170 ? '…' : ''}
+                <span className="citation-actions">
+                  <button type="button" className="text-button" onClick={() => setTab('evidence')}>
+                    Open in Evidence
+                  </button>
+                  {source.url && (
+                    <a href={source.url} target="_blank" rel="noreferrer">Original ↗</a>
+                  )}
+                </span>
+              </p>
             </div>
           ))}
         </div>
@@ -1101,9 +1269,11 @@ function AppealView({
 function EmailView({
   detail,
   thread,
+  setTab,
 }: {
-  detail: { case: Doc<'cases'>; messages: Doc<'messages'>[] }
+  detail: { case: Doc<'cases'>; messages: Doc<'messages'>[]; drafts: Doc<'drafts'>[] }
   thread: unknown[] | undefined
+  setTab: (tab: CaseTab) => void
 }) {
   const simulateInboundReply = useMutation(api.email.simulateInboundReply)
   const [simulating, setSimulating] = useState(false)
@@ -1111,6 +1281,15 @@ function EmailView({
   const messages = [...detail.messages].sort((a, b) => a.createdAt - b.createdAt)
   const hasOutbound = messages.some((message) => message.direction === 'outbound')
   const hasInbound = messages.some((message) => message.direction === 'inbound')
+  const latestDraft = detail.drafts[0]
+  const followUpReady =
+    hasInbound &&
+    latestDraft?.status === 'pending_approval' &&
+    detail.drafts.some((draft, index) => index > 0 && (draft.status === 'sent' || draft.status === 'approved'))
+  const followUpDrafting =
+    hasInbound &&
+    !followUpReady &&
+    (detail.case.status === 'drafting' || detail.case.status === 'awaiting_reply')
 
   const simulate = async () => {
     setError('')
@@ -1137,6 +1316,30 @@ function EmailView({
           <div><dt>Messages</dt><dd>{messages.length}</dd></div>
         </dl>
       </header>
+      {followUpReady && (
+        <div className="followup-banner" role="status">
+          <div>
+            <p className="props-label">Human gate</p>
+            <strong>Follow-up draft ready</strong>
+            <p>The payer reply is on file. Approve remains the only send gate.</p>
+          </div>
+          <button className="primary-action" type="button" onClick={() => setTab('appeal')}>
+            Review &amp; approve →
+          </button>
+        </div>
+      )}
+      {!followUpReady && followUpDrafting && (
+        <div className="followup-banner is-waiting" role="status">
+          <div>
+            <p className="props-label">OpenAI</p>
+            <strong>Drafting a follow-up…</strong>
+            <p>Stay here or open Appeal — it updates live when the draft is ready for your review.</p>
+          </div>
+          <button className="secondary-action" type="button" onClick={() => setTab('appeal')}>
+            Watch Appeal →
+          </button>
+        </div>
+      )}
       {messages.length === 0 ? (
         <div className="thread-empty">
           <span className="envelope-mark" aria-hidden="true">↗</span>
@@ -1348,38 +1551,39 @@ function AuditView({ audit }: { audit: Doc<'auditLog'>[] }) {
     <div className="audit-layout">
       <header>
         <p className="kicker">Provenance / append-only record</p>
-        <h2>Everything consequential, in order.</h2>
-        <p>External work, review decisions, and state changes remain visible here.</p>
+        <h2>How this case ran.</h2>
+        <p>Firecrawl, OpenAI, AgentMail, and your approvals — in order, never rewritten.</p>
       </header>
       {audit.length === 0 ? (
         <div className="quiet-empty"><span>Record not started</span><p>The first case action will appear here.</p></div>
       ) : (
         <ol className="audit-timeline">
-          {audit.map((entry, index) => (
-            <li key={entry._id}>
-              <div className="audit-sequence">{String(audit.length - index).padStart(3, '0')}</div>
-              <Mark name={entry.actor} />
-              <div className="audit-copy">
-                <p><span>{entry.actor}</span><time>{formatDate(entry.createdAt, true)}</time></p>
-                <h3>{humanizeEvent(entry.event)}</h3>
-                <p>{entry.detail}</p>
-                <small>Operation {entry.operationId}</small>
-              </div>
-              <span className={`audit-status ${entry.status}`}>{entry.status}</span>
-            </li>
-          ))}
+          {audit.map((entry, index) => {
+            const story = describeAuditEvent(entry.event)
+            return (
+              <li key={entry._id}>
+                <div className="audit-sequence">{String(audit.length - index).padStart(3, '0')}</div>
+                <Mark name={story.vendor === 'You' ? 'B' : story.vendor} />
+                <div className="audit-copy">
+                  <p>
+                    <span className={`audit-vendor vendor-${story.vendor.toLowerCase()}`}>{story.vendor}</span>
+                    <time>{formatDate(entry.createdAt, true)}</time>
+                  </p>
+                  <h3>{story.title}</h3>
+                  <p>{entry.detail}</p>
+                  <details className="audit-tech">
+                    <summary>Technical id</summary>
+                    <small>{entry.operationId}</small>
+                  </details>
+                </div>
+                <span className={`audit-status ${entry.status}`}>{entry.status}</span>
+              </li>
+            )
+          })}
         </ol>
       )}
     </div>
   )
-}
-
-function humanizeEvent(event: string) {
-  return event
-    .replace(/^external\./, '')
-    .replaceAll('.', ' · ')
-    .replaceAll('_', ' ')
-    .replace(/^\w/, (letter) => letter.toUpperCase())
 }
 
 function CaseSkeleton({ onBoard }: { onBoard: () => void }) {

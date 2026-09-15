@@ -1,14 +1,20 @@
 :root {
-  --paper: oklch(0.992 0.004 250);
-  --paper-deep: oklch(0.972 0.006 250);
+  /* Surface ladder — quiet depth without cards */
+  --surface-0: oklch(0.985 0.005 250);
+  --surface-1: oklch(0.992 0.004 250);
+  --surface-2: oklch(0.998 0.002 250);
+  --surface-3: oklch(1 0 0);
+  --paper: var(--surface-1);
+  --paper-deep: var(--surface-0);
   --paper-muted: oklch(0.72 0.012 250);
-  --sheet: oklch(0.998 0.002 250);
+  --sheet: var(--surface-2);
   --ink: oklch(0.18 0.018 264);
   --ink-soft: oklch(0.28 0.016 264);
   --muted: oklch(0.46 0.014 264);
   --faint: oklch(0.58 0.01 264);
-  --rule: oklch(0.93 0.006 264);
+  --rule: oklch(0.91 0.008 264);
   --rule-strong: oklch(0.78 0.016 264);
+  --hairline: 1px solid var(--rule);
   --signal: oklch(0.91 0.18 112);
   --signal-deep: oklch(0.42 0.08 264);
   --signal-ink: oklch(0.22 0.06 112);
@@ -17,10 +23,12 @@
   --display: 'Literata', Georgia, serif;
   --reading: 'Source Serif 4', Georgia, serif;
   --body: 'Onest', 'Segoe UI', sans-serif;
-  --radius: 14px;
-  --radius-sm: 10px;
-  --shadow: 0 1px 1px oklch(0.18 0.018 264 / 0.04), 0 16px 40px oklch(0.18 0.018 264 / 0.07);
-  --shadow-lift: 0 2px 4px oklch(0.18 0.018 264 / 0.06), 0 28px 60px oklch(0.18 0.018 264 / 0.1);
+  /* Tool-like geometry (Obsidian grammar on paper brand) */
+  --radius: 4px;
+  --radius-sm: 4px;
+  --radius-pill: 999px;
+  --shadow: none;
+  --shadow-lift: 0 1px 0 oklch(0.18 0.018 264 / 0.04);
   --space-2xs: .25rem;
   --space-xs: .5rem;
   --space-sm: .75rem;
@@ -29,8 +37,11 @@
   --space-xl: 2rem;
   --space-2xl: 3rem;
   --space-3xl: 6rem;
-  --page-gutter: clamp(1rem, 4vw, 4.5rem);
+  --page-gutter: clamp(1rem, 3vw, 2rem);
+  --rail-width: 220px;
+  --props-width: 280px;
   --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --chrome-h: 48px;
 
   color: var(--ink);
   background: var(--paper);

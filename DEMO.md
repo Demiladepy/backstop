@@ -18,9 +18,10 @@ the fictional denial attaches automatically.
 cited draft appear live. Call out `[UNVERIFIED]` if any paragraph lacks a
 source.
 
-1:00–1:40 — Show citations. **Approve and send**. Open **Email** and
-**Record**. Optionally **Simulate fictional payer reply**, then show the
-follow-up draft still waiting for approval.
+1:00–1:40 — Show citations (click [N] to flash the note). **Approve and send**.
+Open **Email** and **Record** (sponsor-labeled timeline). Optionally **Simulate
+fictional payer reply**, then use the follow-up banner → Appeal — still waits
+for approval.
 
 1:40–2:20 — **Watch** tab → **Run demo Watch beat**. Say: deadline armed,
 public form filled with sample values, submit never clicked — no password or
