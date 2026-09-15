@@ -30,30 +30,57 @@ const GATE_ROWS = [
 
 const STEP_COLORS = ['sky', 'sand', 'mint', 'rose'] as const
 
-const SPONSOR_SLIDES = [
+const STACK = [
   {
     id: 'convex',
     name: 'Convex',
     role: 'Reactive backend',
-    theme: 'ink',
+    detail:
+      'Live case state, file storage, scheduling, and audit. The board and appeal update as work finishes.',
+    href: 'https://www.convex.dev/',
+  },
+  {
+    id: 'firecrawl',
+    name: 'Firecrawl',
+    role: 'Parse and policy research',
+    detail:
+      'Reads the sample denial packet and scrapes public policy pages into cited sources on the case.',
+    href: 'https://www.firecrawl.dev/',
   },
   {
     id: 'openai',
     name: 'OpenAI',
     role: 'Grounded drafting',
-    theme: 'void',
-  },
-  {
-    id: 'firecrawl',
-    name: 'Firecrawl',
-    role: 'Policy research',
-    theme: 'moss',
+    detail:
+      'Builds the appeal from stored sources only. Unsupported claims stay marked unverified.',
+    href: 'https://openai.com/',
   },
   {
     id: 'agentmail',
     name: 'AgentMail',
     role: 'Human-gated send',
-    theme: 'indigo',
+    detail:
+      'Outbound mail and inbound replies. Nothing leaves until you approve the exact draft.',
+    href: 'https://www.agentmail.to/',
+  },
+] as const
+
+const INSIDE_DEMO = [
+  {
+    title: 'Case board',
+    copy: 'Deadlines, needs-review queue, and a three-pane case file after you enter.',
+  },
+  {
+    title: 'Evidence',
+    copy: 'Denial letter plus EOB, then public policy clauses with URLs and retrieval times.',
+  },
+  {
+    title: 'Appeal review',
+    copy: 'Side-by-side documents, citation jumps, and approve as the only send gate.',
+  },
+  {
+    title: 'Email, Watch, Record',
+    copy: 'Threaded mail, deadline/form watch that stops before submit, and a sponsor-labeled audit trail.',
   },
 ] as const
 
@@ -64,7 +91,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [activeGate, setActiveGate] = useState('review')
   const [gatePinned, setGatePinned] = useState(false)
-  const [sponsorIndex, setSponsorIndex] = useState(0)
 
   useEffect(() => {
     if (!menuOpen) return
@@ -86,13 +112,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
     }, 2200)
     return () => window.clearInterval(timer)
   }, [gatePinned])
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setSponsorIndex((current) => (current + 1) % SPONSOR_SLIDES.length)
-    }, 2800)
-    return () => window.clearInterval(timer)
-  }, [])
 
   const enterDemo = async () => {
     setError('')
@@ -127,7 +146,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
   }
 
   const ctaStyle = { '--mx': '50%', '--my': '50%' } as CSSProperties
-  const activeSponsor = SPONSOR_SLIDES[sponsorIndex]
 
   return (
     <>
@@ -176,11 +194,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
                     <a href="#human-gate" role="menuitem" onClick={() => setMenuOpen(false)}>
                       Human gate
                     </a>
+                    <a href="#inside-demo" role="menuitem" onClick={() => setMenuOpen(false)}>
+                      Inside the demo
+                    </a>
                     <a href="#demo-safety" role="menuitem" onClick={() => setMenuOpen(false)}>
                       Demo safety
                     </a>
                     <a href="#sponsors" role="menuitem" onClick={() => setMenuOpen(false)}>
-                      Sponsors
+                      Stack
                     </a>
                   </div>
                 )}
@@ -361,7 +382,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
           <section className="landing-section" id="demo-safety" aria-labelledby="safety-title">
             <div className="landing-section-head landing-section-head-center">
               <p className="kicker">Demo boundary</p>
-              <h2 id="safety-title">Built for a safe public demo.</h2>
+              <h2 id="safety-title">Built for a safe public demo</h2>
             </div>
             <div className="landing-safety-grid">
               <article className="neon-hover safety-color-amber">
@@ -391,133 +412,61 @@ export function AuthGate({ children }: { children: ReactNode }) {
             </p>
           </section>
 
+          <section className="landing-section" id="inside-demo" aria-labelledby="inside-title">
+            <div className="landing-section-head">
+              <p className="kicker">Inside the private demo</p>
+              <h2 id="inside-title">What you will actually use</h2>
+              <p className="landing-section-lede">
+                After you enter, the product is a quiet three-pane workspace: cases on the left,
+                the document in the center, and properties or review actions on the right.
+              </p>
+            </div>
+            <ol className="inside-stack">
+              {INSIDE_DEMO.map((item, index) => (
+                <li key={item.title}>
+                  <span>{String(index + 1).padStart(2, '0')}</span>
+                  <div>
+                    <h3>{item.title}</h3>
+                    <p>{item.copy}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+
           <section className="landing-sponsors" id="sponsors" aria-label="Hackathon sponsors">
-            <div className="landing-section-head landing-section-head-center">
+            <div className="landing-section-head">
               <p className="kicker">All Gas stack</p>
-              <h2>The tools that make the private demo real.</h2>
+              <h2>The tools that make the private demo real</h2>
+              <p className="landing-section-lede">
+                Every sponsor call runs on the Convex server path. Nothing sensitive is called from the browser.
+              </p>
             </div>
 
-            <article
-              className={`sponsor-stage sponsor-theme-${activeSponsor.theme}`}
-              aria-roledescription="carousel"
-              aria-label={`${activeSponsor.name}: ${activeSponsor.role}`}
-            >
-              <div className="sponsor-copy">
-                <p className="sponsor-kicker">Built with</p>
-                <p className="sponsor-name" key={activeSponsor.id}>
-                  {activeSponsor.name}
-                </p>
-                <p className="sponsor-role">{activeSponsor.role}</p>
-                <p className="sponsor-note">
-                  Convex, OpenAI, Firecrawl, and AgentMail stay on the server path —
-                  never in the browser.
-                </p>
-
-                <div className="sponsor-controls">
-                  <div className="sponsor-dots" role="tablist" aria-label="Sponsors">
-                    {SPONSOR_SLIDES.map((slide, index) => (
-                      <button
-                        key={slide.id}
-                        type="button"
-                        role="tab"
-                        className={index === sponsorIndex ? 'is-active' : undefined}
-                        aria-selected={index === sponsorIndex}
-                        aria-label={slide.name}
-                        onClick={() => setSponsorIndex(index)}
-                      />
-                    ))}
+            <ul className="stack-list">
+              {STACK.map((item) => (
+                <li key={item.id}>
+                  <div className="stack-copy">
+                    <p className="sponsor-kicker">{item.role}</p>
+                    <h3>{item.name}</h3>
+                    <p>{item.detail}</p>
                   </div>
-                  <div className="sponsor-arrows">
-                    <button
-                      type="button"
-                      aria-label="Previous sponsor"
-                      onClick={() =>
-                        setSponsorIndex(
-                          (current) =>
-                            (current - 1 + SPONSOR_SLIDES.length) % SPONSOR_SLIDES.length,
-                        )
-                      }
-                    >
-                      ←
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="Next sponsor"
-                      onClick={() =>
-                        setSponsorIndex((current) => (current + 1) % SPONSOR_SLIDES.length)
-                      }
-                    >
-                      →
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="sponsor-visual" aria-hidden="true">
-                <svg className="sponsor-art" viewBox="0 0 520 420" preserveAspectRatio="xMidYMid slice">
-                  <defs>
-                    <linearGradient id="sponsor-grid-fade" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="currentColor" stopOpacity="0.55" />
-                      <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
-                    </linearGradient>
-                    <radialGradient id="sponsor-sphere" cx="50%" cy="38%" r="62%">
-                      <stop offset="0%" stopColor="var(--sphere-hi)" />
-                      <stop offset="100%" stopColor="var(--sphere-lo)" />
-                    </radialGradient>
-                  </defs>
-                  <rect width="520" height="420" fill="var(--stage-bg)" />
-                  <g fill="none" stroke="url(#sponsor-grid-fade)" strokeWidth="1">
-                    {Array.from({ length: 11 }, (_, i) => {
-                      const t = i / 10
-                      const y = 210 + t * t * 200
-                      const inset = 28 + (1 - t) * 150
-                      return (
-                        <line key={`h-${i}`} x1={inset} y1={y} x2={520 - inset} y2={y} />
-                      )
-                    })}
-                    {Array.from({ length: 13 }, (_, i) => {
-                      const x = 28 + (i / 12) * 464
-                      return <line key={`v-${i}`} x1={x} y1={420} x2={260} y2={210} />
-                    })}
-                  </g>
-                  <ellipse cx="260" cy="248" rx="70" ry="9" fill="#000" opacity="0.25" />
-                  <circle
-                    cx="260"
-                    cy="178"
-                    r="72"
-                    fill="url(#sponsor-sphere)"
-                    stroke="currentColor"
-                    strokeWidth="1.25"
-                    opacity="0.95"
-                  />
-                  {[
-                    [-48, 0.58],
-                    [-30, 0.8],
-                    [-12, 0.94],
-                    [0, 1],
-                    [12, 0.94],
-                    [30, 0.8],
-                    [48, 0.58],
-                  ].map(([dy, sx], index) => (
-                    <ellipse
-                      key={`lat-${index}`}
-                      cx="260"
-                      cy={178 + Number(dy)}
-                      rx={72 * Number(sx)}
-                      ry={9 + Math.abs(Number(dy)) * 0.06}
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1"
-                      opacity="0.7"
-                    />
-                  ))}
-                </svg>
-              </div>
-            </article>
+                  <a
+                    className="stack-link"
+                    href={item.href}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Visit {item.name}
+                    <span aria-hidden="true">↗</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
           </section>
 
           <section className="landing-close landing-close-light">
-            <h2>Open the private demo when you are ready.</h2>
+            <h2>Open the private demo when you are ready</h2>
             <p>One medical-denial case type. Human approval stays the backstop.</p>
             <button
               className="enter-action"
@@ -533,12 +482,21 @@ export function AuthGate({ children }: { children: ReactNode }) {
           </section>
 
           <footer className="landing-brand-footer">
-            <p className="landing-brand-word">
-              Backst<span className="landing-brand-dot">o</span>p
-            </p>
+            <p className="landing-brand-word">Backstop</p>
             <p className="landing-brand-copy">
-              Backstop. All rights reserved. © 2026
+              Demo only. Not HIPAA compliant.
             </p>
+            <nav className="landing-footer-links" aria-label="Project links">
+              <a href="https://backstop-xi.vercel.app" target="_blank" rel="noreferrer">
+                Live app
+              </a>
+              <a href="https://github.com/Demiladepy/backstop" target="_blank" rel="noreferrer">
+                GitHub
+              </a>
+              <a href="https://github.com/Demiladepy/backstop/blob/master/DEMO.md" target="_blank" rel="noreferrer">
+                Demo script
+              </a>
+            </nav>
           </footer>
         </main>
       </Unauthenticated>

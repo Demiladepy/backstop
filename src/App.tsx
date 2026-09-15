@@ -403,7 +403,7 @@ function CaseBoard({
                         type="button"
                         className={filler ? 'is-filler' : undefined}
                         disabled={filler}
-                        title={filler ? 'Board filler for demo density — start a sample case for the live path' : undefined}
+                        title={filler ? 'Board filler for demo density. Start a sample case for the live path.' : undefined}
                         onClick={() => {
                           if (!filler) onSelect(item._id)
                         }}
@@ -466,7 +466,7 @@ function Intake({
 }) {
   const createCase = useMutation(api.cases.createCase)
   const seedSamplePacket = useAction(api.sampleDenial.seedSamplePacket)
-  const [title, setTitle] = useState('Sample denial — outpatient MRI')
+  const [title, setTitle] = useState('Sample denial - outpatient MRI')
   const [payer, setPayer] = useState('Aetna (fictional demo)')
   const [email, setEmail] = useState('appeals@example.com')
   const [deadline, setDeadline] = useState(() => {
@@ -835,7 +835,7 @@ function getNextStep(detail: {
     return { title: 'The letter is being read.', copy: 'This page updates live. You can stay here while the document becomes a cited source.', action: 'Watch evidence', tab: 'evidence' as const }
   }
   if (detail.case.status === 'researching') {
-    return { title: 'Finding public policy.', copy: 'Firecrawl is searching and scraping official policy pages from the denial language. This updates live — no manual step needed.', action: 'Watch evidence', tab: 'evidence' as const }
+    return { title: 'Finding public policy.', copy: 'Firecrawl is searching and scraping official policy pages from the denial language. This updates live. No manual step needed.', action: 'Watch evidence', tab: 'evidence' as const }
   }
   if (!detail.sources.some((source) => source.kind === 'policy')) {
     return { title: 'Find the policy behind the denial.', copy: detail.case.status === 'error' ? 'Automatic research did not finish. Retry policy search or continue with the letter alone.' : 'Search public policy material and keep every retrieved clause attached to this case.', action: 'Research policy', tab: 'evidence' as const }
@@ -1176,7 +1176,7 @@ function AppealView({
           </h2>
           <p>
             {pipelineBusy
-              ? 'Parse, policy research, and drafting run automatically after the sample letter attaches. Stay on Evidence or wait here — approve remains the only send gate.'
+              ? 'Parse, policy research, and drafting run automatically after the sample letter attaches. Stay on Evidence or wait here. Approve remains the only send gate.'
               : (
                 <>
                   The draft will use only sources in this case. Any unsupported paragraph
@@ -1313,7 +1313,7 @@ function AppealView({
           </p>
           {unverifiedCount > 0 && (
             <p className="unverified-count" role="status">
-              {unverifiedCount} unverified {unverifiedCount === 1 ? 'claim' : 'claims'} — review before approving.
+              {unverifiedCount} unverified {unverifiedCount === 1 ? 'claim' : 'claims'}. Review before approving.
             </p>
           )}
         </div>
@@ -1477,7 +1477,7 @@ function EmailView({
           <div>
             <p className="props-label">OpenAI</p>
             <strong>Drafting a follow-up…</strong>
-            <p>Stay here or open Appeal — it updates live when the draft is ready for your review.</p>
+            <p>Stay here or open Appeal. It updates live when the draft is ready for your review.</p>
           </div>
           <button className="secondary-action" type="button" onClick={() => setTab('appeal')}>
             Watch Appeal →
@@ -1696,7 +1696,7 @@ function AuditView({ audit }: { audit: Doc<'auditLog'>[] }) {
       <header>
         <p className="kicker">Provenance / append-only record</p>
         <h2>How this case ran.</h2>
-        <p>Firecrawl, OpenAI, AgentMail, and your approvals — in order, never rewritten.</p>
+        <p>Firecrawl, OpenAI, AgentMail, and your approvals, in order, never rewritten.</p>
       </header>
       {audit.length === 0 ? (
         <div className="quiet-empty"><span>Record not started</span><p>The first case action will appear here.</p></div>
