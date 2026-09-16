@@ -1,7 +1,7 @@
 import { useAuthActions } from '@convex-dev/auth/react'
 import { Authenticated, AuthLoading, Unauthenticated } from 'convex/react'
 import { useEffect, useState } from 'react'
-import type { CSSProperties, PointerEvent, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { BrandMark } from './BrandMark'
 
 const GATE_ROWS = [
@@ -133,20 +133,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
     }
   }
 
-  const shineMove = (event: PointerEvent<HTMLButtonElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect()
-    event.currentTarget.style.setProperty(
-      '--mx',
-      `${((event.clientX - rect.left) / rect.width) * 100}%`,
-    )
-    event.currentTarget.style.setProperty(
-      '--my',
-      `${((event.clientY - rect.top) / rect.height) * 100}%`,
-    )
-  }
-
-  const ctaStyle = { '--mx': '50%', '--my': '50%' } as CSSProperties
-
   return (
     <>
       <AuthLoading>
@@ -157,21 +143,13 @@ export function AuthGate({ children }: { children: ReactNode }) {
       </AuthLoading>
       <Unauthenticated>
         <main className="landing landing-exact">
-          <div className="landing-atmosphere" aria-hidden="true">
-            <div className="landing-tile-grid">
-              {Array.from({ length: 48 }, (_, index) => (
-                <span key={index} className="landing-tile" />
-              ))}
-            </div>
-            <div className="landing-hero-glow" />
-          </div>
-
           <header className="landing-top">
             <div className="landing-top-inner">
               <span className="landing-brand-lockup" aria-label="Backstop">
                 <BrandMark size={30} />
                 <em>Backstop</em>
               </span>
+              <p className="landing-top-tagline">Medical denial appeals you control</p>
               <div className="landing-nav-menu">
                 <button
                   className="landing-menu-bar"
@@ -180,7 +158,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
                   aria-controls="landing-menu"
                   onClick={() => setMenuOpen((open) => !open)}
                 >
-                  Menu
+                  <span className="visually-hidden">Menu</span>
                   <span className="landing-menu-lines" aria-hidden="true">
                     <i />
                     <i />
@@ -209,12 +187,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
               <button
                 className="enter-action enter-action-compact landing-top-cta"
                 type="button"
-                style={ctaStyle}
                 disabled={signingIn}
-                onPointerMove={shineMove}
                 onClick={() => void enterDemo()}
               >
-                <span className="enter-action-shine" aria-hidden="true" />
                 <span>{signingIn ? 'Opening…' : 'Enter private demo'}</span>
               </button>
             </div>
@@ -230,16 +205,13 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
               <div className="landing-cta-pair">
                 <button
-                  className="enter-action"
+                  className="ghost-text-action"
                   type="button"
-                  style={ctaStyle}
                   disabled={signingIn}
-                  onPointerMove={shineMove}
                   onClick={() => void enterDemo()}
                 >
-                  <span className="enter-action-shine" aria-hidden="true" />
                   <span>{signingIn ? 'Opening private demo…' : 'Enter private demo'}</span>
-                  {!signingIn && <span aria-hidden="true">→</span>}
+                  {!signingIn && <span aria-hidden="true"> →</span>}
                 </button>
               </div>
 
@@ -248,45 +220,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
                   {error}
                 </p>
               )}
-            </div>
-
-            <div className="landing-peek" aria-hidden="true">
-              <article className="peek-card peek-card-a">
-                <span>Coverage determination</span>
-                <strong>Sample denial</strong>
-                <i />
-                <i />
-                <i />
-              </article>
-              <article className="peek-card peek-card-b">
-                <span>Policy source</span>
-                <strong>Cited clause</strong>
-                <i />
-                <i />
-                <i />
-              </article>
-              <article className="peek-card peek-card-c">
-                <span>Grounded appeal</span>
-                <strong>Ready for review</strong>
-                <i />
-                <i />
-                <i />
-                <em>Not sent</em>
-              </article>
-              <article className="peek-card peek-card-d">
-                <span>Human gate</span>
-                <strong>Your approval</strong>
-                <i />
-                <i />
-                <i />
-              </article>
-              <article className="peek-card peek-card-e">
-                <span>Audit trail</span>
-                <strong>Every step logged</strong>
-                <i />
-                <i />
-                <i />
-              </article>
             </div>
           </section>
 
@@ -469,34 +402,26 @@ export function AuthGate({ children }: { children: ReactNode }) {
             <h2>Open the private demo when you are ready</h2>
             <p>One medical-denial case type. Human approval stays the backstop.</p>
             <button
-              className="enter-action"
+              className="ghost-text-action"
               type="button"
-              style={ctaStyle}
               disabled={signingIn}
-              onPointerMove={shineMove}
               onClick={() => void enterDemo()}
             >
-              <span className="enter-action-shine" aria-hidden="true" />
               <span>{signingIn ? 'Opening private demo…' : 'Enter private demo'}</span>
+              {!signingIn && <span aria-hidden="true"> →</span>}
             </button>
           </section>
 
           <footer className="landing-brand-footer">
-            <p className="landing-brand-word">Backstop</p>
             <p className="landing-brand-copy">
-              Demo only. Not HIPAA compliant.
+              Backstop · Demo only. Not HIPAA compliant.
+              {' '}
+              <a href="https://backstop-xi.vercel.app" target="_blank" rel="noreferrer">Live app</a>
+              {' · '}
+              <a href="https://github.com/Demiladepy/backstop" target="_blank" rel="noreferrer">GitHub</a>
+              {' · '}
+              <a href="https://github.com/Demiladepy/backstop/blob/master/DEMO.md" target="_blank" rel="noreferrer">Demo script</a>
             </p>
-            <nav className="landing-footer-links" aria-label="Project links">
-              <a href="https://backstop-xi.vercel.app" target="_blank" rel="noreferrer">
-                Live app
-              </a>
-              <a href="https://github.com/Demiladepy/backstop" target="_blank" rel="noreferrer">
-                GitHub
-              </a>
-              <a href="https://github.com/Demiladepy/backstop/blob/master/DEMO.md" target="_blank" rel="noreferrer">
-                Demo script
-              </a>
-            </nav>
           </footer>
         </main>
       </Unauthenticated>
