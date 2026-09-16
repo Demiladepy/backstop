@@ -223,6 +223,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
             <div className="ah-orb ah-orb-ember" aria-hidden="true" />
             <div className="ah-orb ah-orb-blossom" aria-hidden="true" />
             <div className="ah-orb ah-orb-forest" aria-hidden="true" />
+            <div className="ah-orb ah-orb-petal" aria-hidden="true" />
             <p className="ah-badge">Private demo</p>
             <h1 id="auth-title" className="ah-display">
               From a medical denial to an appeal you control.
@@ -239,7 +240,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
               >
                 {signingIn ? 'Opening private demo…' : 'Enter private demo'}
               </button>
-              <a className="ah-ghost-link" href="#how-it-works">
+              <a className="ah-outline-cta" href="#how-it-works">
                 See how it works
               </a>
             </div>
@@ -256,8 +257,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
               <h2 id="how-title">One clear path from denial to a draft you control.</h2>
             </div>
             <div className="ah-tint-grid">
-              {STEPS.map((step) => (
+              {STEPS.map((step, index) => (
                 <article key={step.title} className={`ah-tint-card ah-tint-${step.tint}`}>
+                  <p className="ah-step-index">{String(index + 1).padStart(2, '0')}</p>
                   <button
                     className="ah-circle-arrow"
                     type="button"
