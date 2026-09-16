@@ -3,7 +3,7 @@ import { Authenticated, AuthLoading, Unauthenticated } from 'convex/react'
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { BrandMark } from './BrandMark'
-import './landing-ib.css'
+import './landing-ah.css'
 
 const GATE_ROWS = [
   {
@@ -11,21 +11,18 @@ const GATE_ROWS = [
     label: 'Draft ready',
     status: 'waiting',
     tone: 'muted' as const,
-    color: 'cyan',
   },
   {
     id: 'review',
     label: 'Your review',
     status: 'required',
     tone: 'live' as const,
-    color: 'lime',
   },
   {
     id: 'outbound',
     label: 'Outbound email',
     status: 'locked',
     tone: 'muted' as const,
-    color: 'orchid',
   },
 ]
 
@@ -84,45 +81,27 @@ const INSIDE_DEMO = [
 ] as const
 
 const STEPS = [
-  [
-    'Open a sample denial packet',
-    'A fictional denial letter and EOB attach automatically. Backstop reads them into visible evidence.',
-  ],
-  [
-    'Find real policy language',
-    'Search and scrape public payer policy, then keep every clause on the case.',
-  ],
-  [
-    'Draft a cited appeal',
-    'Paragraphs quote stored sources. Unsupported claims stay marked unverified.',
-  ],
-  [
-    'Approve before anything leaves',
-    'Edit exact language, then approve. Sending only happens after that gate.',
-  ],
+  {
+    title: 'Open a sample denial packet',
+    copy: 'A fictional denial letter and EOB attach automatically. Backstop reads them into visible evidence.',
+    tint: 'ember' as const,
+  },
+  {
+    title: 'Find real policy language',
+    copy: 'Search and scrape public payer policy, then keep every clause on the case.',
+    tint: 'blossom' as const,
+  },
+  {
+    title: 'Draft a cited appeal',
+    copy: 'Paragraphs quote stored sources. Unsupported claims stay marked unverified.',
+    tint: 'forest' as const,
+  },
+  {
+    title: 'Approve before anything leaves',
+    copy: 'Edit exact language, then approve. Sending only happens after that gate.',
+    tint: 'petal' as const,
+  },
 ] as const
-
-function ArrowEnter({
-  disabled,
-  onClick,
-  label,
-}: {
-  disabled: boolean
-  onClick: () => void
-  label: string
-}) {
-  return (
-    <button
-      className="ib-arrow-cta"
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      aria-label={label}
-    >
-      <span aria-hidden="true">→</span>
-    </button>
-  )
-}
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const { signIn } = useAuthActions()
@@ -182,35 +161,35 @@ export function AuthGate({ children }: { children: ReactNode }) {
         </main>
       </AuthLoading>
       <Unauthenticated>
-        <main className="landing landing-ib">
-          <header className="landing-top ib-top">
-            <div className="landing-top-inner ib-top-inner">
-              <span className="landing-brand-lockup ib-brand" aria-label="Backstop">
+        <main className="landing landing-ah">
+          <header className="ah-top">
+            <div className="ah-pill-nav">
+              <span className="ah-brand" aria-label="Backstop">
                 <BrandMark size={28} />
                 <em>Backstop</em>
               </span>
-              <nav className="ib-nav" aria-label="Landing">
+              <nav className="ah-nav" aria-label="Landing">
                 <a href="#how-it-works">How it works</a>
                 <a href="#human-gate">Human gate</a>
                 <a href="#inside-demo">Inside</a>
                 <a href="#sponsors">Stack</a>
               </nav>
-              <div className="landing-nav-menu ib-menu">
+              <div className="ah-menu">
                 <button
-                  className="landing-menu-bar"
+                  className="ah-menu-btn"
                   type="button"
                   aria-expanded={menuOpen}
                   aria-controls="landing-menu"
                   onClick={() => setMenuOpen((open) => !open)}
                 >
                   <span className="visually-hidden">Menu</span>
-                  <span className="landing-menu-lines" aria-hidden="true">
+                  <span className="ah-menu-lines" aria-hidden="true">
                     <i />
                     <i />
                   </span>
                 </button>
                 {menuOpen && (
-                  <div className="landing-menu-panel" id="landing-menu" role="menu">
+                  <div className="ah-menu-panel" id="landing-menu" role="menu">
                     <a href="#how-it-works" role="menuitem" onClick={() => setMenuOpen(false)}>
                       How it works
                     </a>
@@ -230,7 +209,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
                 )}
               </div>
               <button
-                className="ib-filled-cta ib-filled-cta-compact"
+                className="ah-primary-cta ah-primary-cta-compact"
                 type="button"
                 disabled={signingIn}
                 onClick={() => void enterDemo()}
@@ -240,33 +219,29 @@ export function AuthGate({ children }: { children: ReactNode }) {
             </div>
           </header>
 
-          <section className="ib-hero" aria-labelledby="auth-title">
-            <p className="ib-tag">
-              <span className="ib-dot" aria-hidden="true" />
-              Private demo
-            </p>
-            <h1 id="auth-title" className="ib-hero-display">
-              Denial to appeal
-              <br />
-              you control.
+          <section className="ah-hero" aria-labelledby="auth-title">
+            <div className="ah-orb ah-orb-ember" aria-hidden="true" />
+            <div className="ah-orb ah-orb-blossom" aria-hidden="true" />
+            <div className="ah-orb ah-orb-forest" aria-hidden="true" />
+            <p className="ah-badge">Private demo</p>
+            <h1 id="auth-title" className="ah-display">
+              From a medical denial to an appeal you control.
             </h1>
-            <p className="ib-hero-lede auth-lede">
+            <p className="ah-lede auth-lede">
               Drafts and sends the appeals you approve — not legal or medical advice.
             </p>
-            <div className="ib-hero-actions">
+            <div className="ah-hero-actions">
               <button
-                className="ib-filled-cta"
+                className="ah-primary-cta"
                 type="button"
                 disabled={signingIn}
                 onClick={() => void enterDemo()}
               >
                 {signingIn ? 'Opening private demo…' : 'Enter private demo'}
               </button>
-              <ArrowEnter
-                disabled={signingIn}
-                onClick={() => void enterDemo()}
-                label="Enter private demo"
-              />
+              <a className="ah-ghost-link" href="#how-it-works">
+                See how it works
+              </a>
             </div>
             {error && (
               <p className="form-error" role="alert">
@@ -275,34 +250,40 @@ export function AuthGate({ children }: { children: ReactNode }) {
             )}
           </section>
 
-          <section className="ib-section" id="how-it-works" aria-labelledby="how-title">
-            <div className="ib-section-head">
-              <p className="ib-counter">01 / 04</p>
+          <section className="ah-section" id="how-it-works" aria-labelledby="how-title">
+            <div className="ah-section-head">
+              <p className="ah-badge">The path</p>
               <h2 id="how-title">One clear path from denial to a draft you control.</h2>
             </div>
-            <ol className="ib-steps">
-              {STEPS.map(([title, copy], index) => (
-                <li key={title}>
-                  <span>{String(index + 1).padStart(2, '0')}</span>
-                  <div>
-                    <h3>{title}</h3>
-                    <p>{copy}</p>
-                  </div>
-                </li>
+            <div className="ah-tint-grid">
+              {STEPS.map((step) => (
+                <article key={step.title} className={`ah-tint-card ah-tint-${step.tint}`}>
+                  <button
+                    className="ah-circle-arrow"
+                    type="button"
+                    disabled={signingIn}
+                    onClick={() => void enterDemo()}
+                    aria-label="Enter private demo"
+                  >
+                    →
+                  </button>
+                  <h3>{step.title}</h3>
+                  <p>{step.copy}</p>
+                </article>
               ))}
-            </ol>
+            </div>
           </section>
 
-          <section className="ib-section ib-section-dark" id="human-gate" aria-labelledby="gate-title">
-            <div className="ib-section-head">
-              <p className="ib-counter ib-counter-dark">02 / 04</p>
+          <section className="ah-section" id="human-gate" aria-labelledby="gate-title">
+            <div className="ah-section-head">
+              <p className="ah-badge">The human gate</p>
               <h2 id="gate-title">Autonomy stops where your approval begins.</h2>
-              <p className="ib-section-lede">
+              <p className="ah-section-lede">
                 Backstop can draft and prepare. It cannot send until you approve the exact words.
                 That is the product promise, not a footnote.
               </p>
             </div>
-            <div className="ib-gate-panel" role="list">
+            <div className="ah-white-card ah-gate-card" role="list">
               {GATE_ROWS.map((row) => {
                 const isActive = activeGate === row.id
                 return (
@@ -310,7 +291,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
                     key={row.id}
                     type="button"
                     role="listitem"
-                    className={`ib-gate-row${isActive ? ' is-active' : ''}`}
+                    className={`ah-gate-row${isActive ? ' is-active' : ''}`}
                     aria-pressed={isActive}
                     onClick={() => {
                       setActiveGate(row.id)
@@ -329,38 +310,29 @@ export function AuthGate({ children }: { children: ReactNode }) {
             </div>
           </section>
 
-          <section className="ib-section" id="demo-safety" aria-labelledby="safety-title">
-            <div className="ib-section-head">
-              <p className="ib-counter">03 / 04</p>
+          <section className="ah-section" id="demo-safety" aria-labelledby="safety-title">
+            <div className="ah-section-head">
+              <p className="ah-badge">Demo boundary</p>
               <h2 id="safety-title">Built for a safe public demo.</h2>
             </div>
-            <div className="ib-card-grid">
-              <article>
-                <p className="ib-tag">
-                  <span className="ib-dot" aria-hidden="true" />
-                  Boundary
-                </p>
+            <div className="ah-white-grid">
+              <article className="ah-white-card">
+                <p className="ah-badge ah-badge-info">Boundary</p>
                 <h3>Not HIPAA compliant</h3>
                 <p>
                   This is a hackathon demo. Use only fictional or fully de-identified sample
                   documents. Never enter real health information.
                 </p>
               </article>
-              <article>
-                <p className="ib-tag">
-                  <span className="ib-dot" aria-hidden="true" />
-                  Credentials
-                </p>
+              <article className="ah-white-card">
+                <p className="ah-badge ah-badge-info">Credentials</p>
                 <h3>No credentials</h3>
                 <p>
                   Backstop never asks for insurer logins, passwords, card numbers, or bank details.
                 </p>
               </article>
-              <article>
-                <p className="ib-tag">
-                  <span className="ib-dot" aria-hidden="true" />
-                  Audit
-                </p>
+              <article className="ah-white-card">
+                <p className="ah-badge ah-badge-info">Audit</p>
                 <h3>Visible record</h3>
                 <p>
                   Every external step appends to an immutable audit timeline so you can see what
@@ -368,89 +340,71 @@ export function AuthGate({ children }: { children: ReactNode }) {
                 </p>
               </article>
             </div>
-            <p className="ib-hipaa">
+            <p className="ah-hipaa">
               Not HIPAA compliant. Never enter health information, passwords, insurer credentials,
               or payment details.
             </p>
           </section>
 
-          <section className="ib-section" id="inside-demo" aria-labelledby="inside-title">
-            <div className="ib-section-head">
-              <p className="ib-counter">04 / 04</p>
+          <section className="ah-section" id="inside-demo" aria-labelledby="inside-title">
+            <div className="ah-section-head">
+              <p className="ah-badge">Inside the private demo</p>
               <h2 id="inside-title">What you will actually use.</h2>
-              <p className="ib-section-lede">
+              <p className="ah-section-lede">
                 After you enter, the product is a quiet three-pane workspace: cases on the left,
                 the document in the center, and properties or review actions on the right.
               </p>
             </div>
-            <ol className="ib-steps">
-              {INSIDE_DEMO.map((item, index) => (
-                <li key={item.title}>
-                  <span>{String(index + 1).padStart(2, '0')}</span>
-                  <div>
-                    <h3>{item.title}</h3>
-                    <p>{item.copy}</p>
-                  </div>
-                </li>
+            <div className="ah-white-grid ah-white-grid-2">
+              {INSIDE_DEMO.map((item) => (
+                <article key={item.title} className="ah-white-card">
+                  <h3>{item.title}</h3>
+                  <p>{item.copy}</p>
+                </article>
               ))}
-            </ol>
+            </div>
           </section>
 
-          <section className="ib-section" id="sponsors" aria-label="Hackathon sponsors">
-            <div className="ib-section-head">
-              <p className="ib-tag">
-                <span className="ib-dot" aria-hidden="true" />
-                All Gas stack
-              </p>
+          <section className="ah-section" id="sponsors" aria-label="Hackathon sponsors">
+            <div className="ah-section-head">
+              <p className="ah-badge">All Gas stack</p>
               <h2>The tools that make the private demo real.</h2>
-              <p className="ib-section-lede">
+              <p className="ah-section-lede">
                 Every sponsor call runs on the Convex server path. Nothing sensitive is called from
                 the browser.
               </p>
             </div>
-            <ul className="ib-stack">
+            <ul className="ah-stack">
               {STACK.map((item) => (
-                <li key={item.id}>
+                <li key={item.id} className="ah-white-card">
                   <div>
-                    <p className="ib-tag">
-                      <span className="ib-dot" aria-hidden="true" />
-                      {item.role}
-                    </p>
+                    <p className="ah-badge ah-badge-info">{item.role}</p>
                     <h3>{item.name}</h3>
                     <p>{item.detail}</p>
                   </div>
-                  <a className="ib-stack-link" href={item.href} target="_blank" rel="noreferrer">
-                    Visit {item.name}
-                    <span className="ib-arrow-cta ib-arrow-cta-static" aria-hidden="true">
-                      ↗
-                    </span>
+                  <a className="ah-ghost-link" href={item.href} target="_blank" rel="noreferrer">
+                    Visit {item.name} →
                   </a>
                 </li>
               ))}
             </ul>
           </section>
 
-          <section className="ib-close">
-            <h2>Open the private demo when you are ready.</h2>
+          <section className="ah-close">
+            <p className="ah-badge">Ready when you are</p>
+            <h2>Open the private demo.</h2>
             <p>One medical-denial case type. Human approval stays the backstop.</p>
-            <div className="ib-hero-actions">
-              <button
-                className="ib-filled-cta"
-                type="button"
-                disabled={signingIn}
-                onClick={() => void enterDemo()}
-              >
-                {signingIn ? 'Opening private demo…' : 'Enter private demo'}
-              </button>
-              <ArrowEnter
-                disabled={signingIn}
-                onClick={() => void enterDemo()}
-                label="Enter private demo"
-              />
-            </div>
+            <button
+              className="ah-primary-cta"
+              type="button"
+              disabled={signingIn}
+              onClick={() => void enterDemo()}
+            >
+              {signingIn ? 'Opening private demo…' : 'Enter private demo'}
+            </button>
           </section>
 
-          <footer className="ib-footer">
+          <footer className="ah-footer">
             <p>
               Backstop · Demo only. Not HIPAA compliant.
               {' '}
