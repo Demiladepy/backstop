@@ -1,68 +1,51 @@
 :root {
-  /* ThoughtLab — void cathedral */
-  --color-void: #000000;
-  --color-ash: #cccccc;
-  --color-frost: #ffffff;
-  --color-graphite: #4c4c4c;
-  --color-crimson-signal: #fc1c46;
-
-  --font-sui: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
-
-  --text-caption: 10px;
-  --text-body-sm: 14px;
-  --text-subheading: 18px;
-  --text-heading-sm: 27px;
-  --text-heading: clamp(2.75rem, 8vw, 4.5rem);
-  --text-heading-lg: clamp(3.5rem, 10vw, 5.7rem);
-  --text-display: clamp(4.5rem, 18vw, 12.375rem);
-
-  --surface-0: var(--color-void);
-  --surface-1: var(--color-void);
-  --surface-2: #0a0a0a;
-  --surface-3: #111111;
-  --paper: var(--color-void);
-  --paper-deep: #050505;
-  --paper-muted: var(--color-graphite);
+  /* Surface ladder — quiet depth without cards */
+  --surface-0: oklch(0.985 0.005 250);
+  --surface-1: oklch(0.992 0.004 250);
+  --surface-2: oklch(0.998 0.002 250);
+  --surface-3: oklch(1 0 0);
+  --paper: var(--surface-1);
+  --paper-deep: var(--surface-0);
+  --paper-muted: oklch(0.72 0.012 250);
   --sheet: var(--surface-2);
-  --ink: var(--color-frost);
-  --ink-soft: var(--color-ash);
-  --muted: var(--color-ash);
-  --faint: var(--color-graphite);
-  --rule: color-mix(in srgb, var(--color-frost) 18%, transparent);
-  --rule-strong: color-mix(in srgb, var(--color-frost) 35%, transparent);
+  --ink: oklch(0.18 0.018 264);
+  --ink-soft: oklch(0.28 0.016 264);
+  --muted: oklch(0.46 0.014 264);
+  --faint: oklch(0.58 0.01 264);
+  --rule: oklch(0.91 0.008 264);
+  --rule-strong: oklch(0.78 0.016 264);
   --hairline: 1px solid var(--rule);
-  --signal: var(--color-crimson-signal);
-  --signal-deep: var(--color-crimson-signal);
-  --signal-ink: var(--color-frost);
-  --danger: var(--color-ash);
-  --success: var(--color-ash);
-  --display: var(--font-sui);
-  --reading: var(--font-sui);
-  --body: var(--font-sui);
-  --radius: 0;
-  --radius-sm: 0;
-  --radius-pill: 9999px;
+  --signal: oklch(0.91 0.18 112);
+  --signal-deep: oklch(0.42 0.08 264);
+  --signal-ink: oklch(0.22 0.06 112);
+  --danger: oklch(0.50 0.16 25);
+  --success: oklch(0.46 0.11 155);
+  --display: 'Literata', Georgia, serif;
+  --reading: 'Source Serif 4', Georgia, serif;
+  --body: 'Onest', 'Segoe UI', sans-serif;
+  /* Tool-like geometry (Obsidian grammar on paper brand) */
+  --radius: 4px;
+  --radius-sm: 4px;
+  --radius-pill: 999px;
   --shadow: none;
-  --shadow-lift: none;
-  --space-2xs: 7px;
-  --space-xs: 9px;
-  --space-sm: 14px;
-  --space-md: 22px;
-  --space-lg: 36px;
-  --space-xl: 43px;
-  --space-2xl: 86px;
-  --space-3xl: 126px;
-  --page-gutter: clamp(1.25rem, 8vw, 126px);
-  --page-max-width: 1400px;
+  --shadow-lift: 0 1px 0 oklch(0.18 0.018 264 / 0.04);
+  --space-2xs: .25rem;
+  --space-xs: .5rem;
+  --space-sm: .75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 6rem;
+  --page-gutter: clamp(1rem, 3vw, 2rem);
   --rail-width: 220px;
   --props-width: 280px;
   --ease-out: cubic-bezier(.16, 1, .3, 1);
-  --chrome-h: 72px;
+  --chrome-h: 48px;
 
-  color: var(--color-ash);
-  background: var(--color-void);
-  font-family: var(--font-sui);
-  font-weight: 400;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--body);
   font-synthesis: none;
   font-kerning: normal;
   text-rendering: optimizeLegibility;
@@ -75,7 +58,6 @@
 
 html {
   scroll-behavior: smooth;
-  background: var(--color-void);
 }
 
 body {
@@ -87,8 +69,6 @@ body {
     env(safe-area-inset-right)
     env(safe-area-inset-bottom)
     env(safe-area-inset-left);
-  background: var(--color-void);
-  color: var(--color-ash);
 }
 
 button,
@@ -102,7 +82,7 @@ a:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 summary:focus-visible {
-  outline: 2px solid var(--color-frost);
+  outline: 3px solid var(--signal-deep);
   outline-offset: 3px;
 }
 
@@ -112,6 +92,6 @@ a {
 }
 
 ::selection {
-  color: var(--color-frost);
-  background: color-mix(in srgb, var(--color-crimson-signal) 55%, black);
+  color: var(--signal-ink);
+  background: var(--signal);
 }
