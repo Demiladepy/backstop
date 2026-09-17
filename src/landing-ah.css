@@ -172,6 +172,9 @@
 }
 
 .landing-ah .ah-primary-cta {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -192,6 +195,31 @@
     background 180ms var(--ah-ease),
     transform 180ms var(--ah-ease),
     box-shadow 180ms var(--ah-ease);
+}
+
+.landing-ah .ah-primary-cta > span {
+  position: relative;
+  z-index: 1;
+}
+
+.landing-ah .ah-cta-sheen {
+  position: absolute;
+  inset: -40% -60%;
+  z-index: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    color-mix(in srgb, white 45%, transparent) 50%,
+    transparent 65%
+  );
+  transform: translateX(-60%) rotate(8deg);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.landing-ah .ah-cta-magnetic:hover .ah-cta-sheen {
+  opacity: 1;
+  animation: ah-sheen 900ms var(--ah-ease);
 }
 
 .landing-ah .ah-primary-cta:hover:not(:disabled) {
@@ -298,13 +326,49 @@
 }
 
 .landing-ah .ah-hero {
+  --ah-mx: 50%;
+  --ah-my: 42%;
+  --ah-tx: 0px;
+  --ah-ty: 0px;
   position: relative;
   isolation: isolate;
   overflow: clip;
-  max-width: var(--ah-max);
+  max-width: min(1240px, 100%);
   margin: 0 auto;
-  padding: clamp(4rem, 9vw, 6.5rem) var(--ah-gutter) clamp(4.5rem, 10vw, 7rem);
-  text-align: center;
+  padding: clamp(3rem, 7vw, 5.5rem) var(--ah-gutter) clamp(4rem, 9vw, 6.5rem);
+  text-align: left;
+}
+
+.landing-ah .ah-hero-glow {
+  position: absolute;
+  z-index: 0;
+  width: min(520px, 70vw);
+  height: min(520px, 70vw);
+  left: var(--ah-mx);
+  top: var(--ah-my);
+  translate: -50% -50%;
+  border-radius: 1600px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--ah-lavender) 55%, transparent),
+    transparent 68%
+  );
+  filter: blur(8px);
+  pointer-events: none;
+  transition: left 280ms var(--ah-ease), top 280ms var(--ah-ease);
+}
+
+.landing-ah .ah-hero-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: clamp(2rem, 5vw, 3.5rem);
+  align-items: center;
+}
+
+.landing-ah .ah-hero-copy {
+  max-width: 34rem;
 }
 
 .landing-ah .ah-orb {
@@ -314,13 +378,15 @@
   pointer-events: none;
   box-shadow: inset 0 0 0 10px color-mix(in srgb, var(--ah-white) 35%, transparent);
   animation: ah-float 9s var(--ah-ease) infinite;
+  translate: calc(var(--ah-tx) * 1.6) calc(var(--ah-ty) * 1.4);
+  transition: translate 420ms var(--ah-ease);
 }
 
 .landing-ah .ah-orb-ember {
   width: clamp(88px, 14vw, 132px);
   height: clamp(88px, 14vw, 132px);
-  top: 12%;
-  left: 2%;
+  top: 8%;
+  left: 48%;
   background: linear-gradient(145deg, var(--ah-ember), color-mix(in srgb, var(--ah-ember) 70%, white));
   animation-delay: 0s;
 }
@@ -328,17 +394,18 @@
 .landing-ah .ah-orb-blossom {
   width: clamp(120px, 18vw, 176px);
   height: clamp(120px, 18vw, 176px);
-  top: 22%;
-  right: 3%;
+  top: 4%;
+  right: 2%;
   background: linear-gradient(160deg, var(--ah-blossom), color-mix(in srgb, var(--ah-petal) 55%, var(--ah-blossom)));
   animation-delay: -2.5s;
+  translate: calc(var(--ah-tx) * -1.2) calc(var(--ah-ty) * 1.8);
 }
 
 .landing-ah .ah-orb-forest {
   width: clamp(72px, 11vw, 96px);
   height: clamp(72px, 11vw, 96px);
-  bottom: 14%;
-  left: 16%;
+  bottom: 18%;
+  left: 42%;
   background: linear-gradient(150deg, var(--ah-forest), color-mix(in srgb, var(--ah-forest) 65%, white));
   animation-delay: -5s;
 }
@@ -346,10 +413,11 @@
 .landing-ah .ah-orb-petal {
   width: clamp(56px, 8vw, 72px);
   height: clamp(56px, 8vw, 72px);
-  bottom: 22%;
-  right: 18%;
+  bottom: 8%;
+  right: 8%;
   background: var(--ah-petal);
   animation-delay: -1.2s;
+  translate: calc(var(--ah-tx) * -2) calc(var(--ah-ty) * -1.4);
 }
 
 @keyframes ah-float {
@@ -362,39 +430,415 @@
   }
 }
 
-.landing-ah .ah-hero > *:not(.ah-orb) {
+@keyframes ah-sheen {
+  from {
+    transform: translateX(-70%) rotate(8deg);
+  }
+  to {
+    transform: translateX(70%) rotate(8deg);
+  }
+}
+
+@keyframes ah-stamp-in {
+  0% {
+    opacity: 0;
+    transform: scale(1.35) rotate(-18deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(0.94) rotate(-10deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-12deg);
+  }
+}
+
+@keyframes ah-line-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px) rotateX(18deg);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotateX(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes ah-strike {
+  from {
+    background-size: 0% 2px;
+  }
+  to {
+    background-size: 100% 2px;
+  }
+}
+
+.landing-ah .ah-hero > *:not(.ah-orb):not(.ah-hero-glow) {
   position: relative;
   z-index: 1;
 }
 
 .landing-ah .ah-display {
-  max-width: 13ch;
-  margin: 28px auto 0;
+  max-width: 11ch;
+  margin: 24px 0 0;
   font-family: var(--ah-serif);
-  font-size: clamp(2.75rem, 8vw, 4.25rem);
+  font-size: clamp(2.8rem, 7.2vw, 4.5rem);
   font-weight: 400;
   line-height: 1.02;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.03em;
   color: var(--ah-ink);
-  text-wrap: balance;
+  perspective: 800px;
+}
+
+.landing-ah .ah-line {
+  display: block;
+  opacity: 0;
+  transform-origin: left center;
+}
+
+.landing-ah .ah-hero.is-ready .ah-line {
+  animation: ah-line-up 900ms var(--ah-ease) both;
+  animation-delay: calc(120ms + var(--ah-line, 0) * 160ms);
+}
+
+.landing-ah .ah-strike {
+  position: relative;
+  background-image: linear-gradient(var(--ah-ember), var(--ah-ember));
+  background-repeat: no-repeat;
+  background-position: left 55%;
+  background-size: 0% 2px;
+}
+
+.landing-ah .ah-hero.is-ready .ah-strike {
+  animation: ah-strike 700ms 1.1s var(--ah-ease) forwards;
+  color: color-mix(in srgb, var(--ah-ink) 55%, transparent);
+}
+
+.landing-ah .ah-line-glow {
+  color: var(--ah-indigo);
+  text-shadow: 0 0 0 transparent;
+}
+
+.landing-ah .ah-hero.is-ready .ah-line-glow {
+  animation:
+    ah-line-up 900ms var(--ah-ease) both,
+    ah-glow-pulse 2.8s 1.4s ease-in-out infinite;
+  animation-delay: calc(120ms + 1 * 160ms), 1.4s;
+}
+
+@keyframes ah-glow-pulse {
+  0%,
+  100% {
+    text-shadow: 0 0 0 transparent;
+  }
+  50% {
+    text-shadow: 0 8px 28px color-mix(in srgb, var(--ah-indigo) 28%, transparent);
+  }
+}
+
+.landing-ah .ah-badge-enter {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.landing-ah .ah-hero.is-ready .ah-badge-enter {
+  animation: ah-line-up 700ms var(--ah-ease) both;
 }
 
 .landing-ah .ah-lede {
   max-width: 36ch;
-  margin: 28px auto 0;
+  margin: 24px 0 0;
   color: var(--ah-stone);
-  font-size: clamp(1.05rem, 2vw, 1.25rem);
+  font-size: clamp(1.05rem, 2vw, 1.2rem);
   line-height: 1.55;
   letter-spacing: -0.01em;
+  opacity: 0;
+}
+
+.landing-ah .ah-hero.is-ready .ah-lede,
+.landing-ah .ah-hero.is-ready .ah-hero-actions {
+  animation: ah-line-up 800ms 0.7s var(--ah-ease) both;
 }
 
 .landing-ah .ah-hero-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 12px;
-  margin-top: 36px;
+  margin-top: 32px;
+  opacity: 0;
+}
+
+.landing-ah .ah-doc-stage {
+  position: relative;
+  min-height: 420px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 20px;
+}
+
+.landing-ah .ah-doc-stack {
+  position: relative;
+  width: min(100%, 340px);
+  height: 390px;
+  transform-style: preserve-3d;
+  perspective: 1200px;
+}
+
+.landing-ah .ah-paper {
+  position: absolute;
+  inset: 0;
+  padding: 28px 26px;
+  border-radius: 18px;
+  background: var(--ah-white);
+  border: 1px solid color-mix(in srgb, var(--ah-ink) 7%, transparent);
+  box-shadow: var(--ah-shadow-xl);
+  transform-origin: 50% 100%;
+  opacity: 0;
+  transform: translateY(36px) rotateX(12deg) scale(0.94);
+  transition:
+    opacity 700ms var(--ah-ease),
+    transform 900ms var(--ah-ease),
+    filter 700ms var(--ah-ease);
+  overflow: hidden;
+}
+
+.landing-ah .ah-paper header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.landing-ah .ah-paper header span {
+  color: var(--ah-stone);
+}
+
+.landing-ah .ah-paper header strong {
+  color: var(--ah-indigo);
+  font-weight: 600;
+}
+
+.landing-ah .ah-paper-denial header strong {
+  color: var(--ah-ember);
+}
+
+.landing-ah .ah-paper > p {
+  margin: 0 0 22px;
+  font-family: var(--ah-serif);
+  font-size: 1.55rem;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--ah-ink);
+}
+
+.landing-ah .ah-paper > i {
+  display: block;
+  height: 10px;
+  margin-bottom: 10px;
+  border-radius: 1600px;
+  background: color-mix(in srgb, var(--ah-ink) 8%, transparent);
+}
+
+.landing-ah .ah-paper > i:nth-of-type(2) {
+  width: 84%;
+}
+
+.landing-ah .ah-paper > i:nth-of-type(3) {
+  width: 67%;
+}
+
+.landing-ah .ah-stamp {
+  position: absolute;
+  right: 28px;
+  bottom: 36px;
+  margin: 0;
+  padding: 8px 14px;
+  border: 2px solid var(--ah-ember);
+  border-radius: 8px;
+  color: var(--ah-ember);
+  font-family: var(--ah-sans);
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  transform: rotate(-12deg);
+  opacity: 0;
+}
+
+.landing-ah .ah-stamp-draft {
+  border-color: var(--ah-indigo);
+  color: var(--ah-indigo);
+}
+
+.landing-ah .ah-stamp-ok {
+  border-color: var(--ah-forest);
+  color: var(--ah-forest);
+}
+
+.landing-ah .ah-doc-stack.phase-denial .ah-paper-denial,
+.landing-ah .ah-doc-stack.phase-draft .ah-paper-draft,
+.landing-ah .ah-doc-stack.phase-approved .ah-paper-approved {
+  opacity: 1;
+  transform: translateY(0) rotateX(0) rotateZ(-1.5deg) scale(1);
+  z-index: 3;
+}
+
+.landing-ah .ah-doc-stack.phase-denial .ah-paper-denial .ah-stamp,
+.landing-ah .ah-doc-stack.phase-draft .ah-paper-draft .ah-stamp,
+.landing-ah .ah-doc-stack.phase-approved .ah-paper-approved .ah-stamp {
+  animation: ah-stamp-in 700ms 180ms var(--ah-ease) both;
+}
+
+.landing-ah .ah-doc-stack.phase-draft .ah-paper-denial,
+.landing-ah .ah-doc-stack.phase-approved .ah-paper-draft {
+  opacity: 0.35;
+  transform: translate(-18px, 14px) rotateZ(-8deg) scale(0.94);
+  filter: blur(0.4px);
+  z-index: 1;
+}
+
+.landing-ah .ah-doc-stack.phase-approved .ah-paper-denial {
+  opacity: 0.18;
+  transform: translate(-34px, 28px) rotateZ(-14deg) scale(0.88);
+  z-index: 0;
+}
+
+.landing-ah .ah-doc-stack.phase-denial .ah-paper-draft,
+.landing-ah .ah-doc-stack.phase-denial .ah-paper-approved,
+.landing-ah .ah-doc-stack.phase-draft .ah-paper-approved {
+  opacity: 0;
+  transform: translateY(48px) rotateX(16deg) scale(0.92);
+  z-index: 0;
+}
+
+.landing-ah .ah-phase-pills {
+  display: inline-flex;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 1600px;
+  background: var(--ah-white);
+  box-shadow: var(--ah-shadow-sm);
+}
+
+.landing-ah .ah-phase-pills button {
+  min-height: 36px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 1600px;
+  background: transparent;
+  color: var(--ah-stone);
+  font-family: var(--ah-sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 160ms var(--ah-ease), color 160ms var(--ah-ease);
+}
+
+.landing-ah .ah-phase-pills button.is-active {
+  background: var(--ah-indigo);
+  color: var(--ah-white);
+}
+
+.landing-ah .ah-reveal {
+  opacity: 0;
+  transform: translateY(36px);
+  filter: blur(6px);
+  transition:
+    opacity 800ms var(--ah-ease),
+    transform 800ms var(--ah-ease),
+    filter 800ms var(--ah-ease);
+  transition-delay: calc(var(--ah-stagger, 0) * 90ms);
+}
+
+.landing-ah .ah-reveal.is-inview {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+.landing-ah .ah-gate-theater {
+  position: relative;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 28px 18px;
+  overflow: hidden;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--ah-lavender) 35%, transparent), transparent 55%),
+    var(--ah-cream-deep);
+}
+
+.landing-ah .ah-gate-door {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 46%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, var(--ah-midnight), #120b45);
+  color: color-mix(in srgb, var(--ah-white) 80%, transparent);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: transform 900ms var(--ah-ease), opacity 700ms var(--ah-ease);
+  pointer-events: none;
+}
+
+.landing-ah .ah-gate-door-left {
+  left: 0;
+  border-radius: 28px 0 0 28px;
+  transform-origin: left center;
+  box-shadow: inset -12px 0 24px rgba(0, 0, 0, 0.18);
+}
+
+.landing-ah .ah-gate-door-right {
+  right: 0;
+  border-radius: 0 28px 28px 0;
+  transform-origin: right center;
+  box-shadow: inset 12px 0 24px rgba(0, 0, 0, 0.18);
+}
+
+.landing-ah .ah-gate-theater.is-open .ah-gate-door-left {
+  transform: translateX(-104%) rotateY(18deg);
+  opacity: 0.2;
+}
+
+.landing-ah .ah-gate-theater.is-open .ah-gate-door-right {
+  transform: translateX(104%) rotateY(-18deg);
+  opacity: 0.2;
+}
+
+.landing-ah .ah-gate-theater .ah-gate-card {
+  position: relative;
+  z-index: 1;
+  margin: 0 auto;
+}
+
+.ah-loading {
+  min-height: 100svh;
+  display: grid;
+  place-content: center;
+  gap: 18px;
+  justify-items: center;
+  background: var(--ah-cream, #f8f3eb);
+  color: var(--ah-stone, #4a4338);
+  font-family: "Manrope", "Onest", sans-serif;
+}
+
+.ah-loading-mark {
+  animation: ah-float 2.4s ease-in-out infinite;
 }
 
 .landing-ah .ah-section {
@@ -730,6 +1174,44 @@
   }
 }
 
+@media (max-width: 960px) {
+  .landing-ah .ah-hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-ah .ah-hero {
+    text-align: center;
+  }
+
+  .landing-ah .ah-hero-copy {
+    max-width: none;
+  }
+
+  .landing-ah .ah-display {
+    margin-inline: auto;
+  }
+
+  .landing-ah .ah-lede {
+    margin-inline: auto;
+  }
+
+  .landing-ah .ah-hero-actions {
+    justify-content: center;
+  }
+
+  .landing-ah .ah-line {
+    transform-origin: center;
+  }
+
+  .landing-ah .ah-doc-stage {
+    min-height: 360px;
+  }
+
+  .landing-ah .ah-doc-stack {
+    height: 340px;
+  }
+}
+
 @media (max-width: 900px) {
   .landing-ah .ah-tint-grid,
   .landing-ah .ah-white-grid,
@@ -745,7 +1227,7 @@
   .landing-ah .ah-orb-blossom,
   .landing-ah .ah-orb-forest,
   .landing-ah .ah-orb-petal {
-    opacity: 0.45;
+    opacity: 0.4;
   }
 
   .landing-ah .ah-close {
@@ -757,21 +1239,59 @@
   .landing-ah .ah-gate-row.is-active span::before {
     display: none;
   }
+
+  .landing-ah .ah-gate-door {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-ah .ah-orb {
+  .landing-ah .ah-orb,
+  .landing-ah .ah-loading-mark,
+  .ah-loading-mark {
     animation: none;
+  }
+
+  .landing-ah .ah-hero.is-ready .ah-line,
+  .landing-ah .ah-hero.is-ready .ah-line-glow,
+  .landing-ah .ah-hero.is-ready .ah-badge-enter,
+  .landing-ah .ah-hero.is-ready .ah-lede,
+  .landing-ah .ah-hero.is-ready .ah-hero-actions,
+  .landing-ah .ah-cta-magnetic:hover .ah-cta-sheen,
+  .landing-ah .ah-stamp {
+    animation: none !important;
+  }
+
+  .landing-ah .ah-line,
+  .landing-ah .ah-badge-enter,
+  .landing-ah .ah-lede,
+  .landing-ah .ah-hero-actions,
+  .landing-ah .ah-reveal {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+
+  .landing-ah .ah-strike {
+    background-size: 100% 2px;
   }
 
   .landing-ah .ah-primary-cta,
   .landing-ah .ah-tint-card,
-  .landing-ah .ah-circle-arrow {
+  .landing-ah .ah-circle-arrow,
+  .landing-ah .ah-gate-door,
+  .landing-ah .ah-paper {
     transition: none;
   }
 
   .landing-ah .ah-primary-cta:hover:not(:disabled),
   .landing-ah .ah-tint-card:hover {
     transform: none;
+  }
+
+  .landing-ah .ah-gate-theater.is-open .ah-gate-door-left,
+  .landing-ah .ah-gate-theater.is-open .ah-gate-door-right {
+    transform: none;
+    opacity: 0;
   }
 }
