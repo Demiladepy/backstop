@@ -495,8 +495,12 @@
 
 .landing-ah .ah-line {
   display: block;
-  opacity: 0;
+  opacity: 1;
   transform-origin: left center;
+}
+
+.landing-ah.ah-js .ah-hero:not(.is-ready) .ah-line {
+  opacity: 0;
 }
 
 .landing-ah .ah-hero.is-ready .ah-line {
@@ -540,6 +544,10 @@
 }
 
 .landing-ah .ah-badge-enter {
+  opacity: 1;
+}
+
+.landing-ah.ah-js .ah-hero:not(.is-ready) .ah-badge-enter {
   opacity: 0;
   transform: translateY(12px);
 }
@@ -555,6 +563,11 @@
   font-size: clamp(1.05rem, 2vw, 1.2rem);
   line-height: 1.55;
   letter-spacing: -0.01em;
+  opacity: 1;
+}
+
+.landing-ah.ah-js .ah-hero:not(.is-ready) .ah-lede,
+.landing-ah.ah-js .ah-hero:not(.is-ready) .ah-hero-actions {
   opacity: 0;
 }
 
@@ -570,7 +583,7 @@
   justify-content: flex-start;
   gap: 12px;
   margin-top: 32px;
-  opacity: 0;
+  opacity: 1;
 }
 
 .landing-ah .ah-doc-stage {
@@ -750,9 +763,16 @@
 }
 
 .landing-ah .ah-reveal {
+  /* Visible by default so copy never disappears if JS/observer fails */
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+.landing-ah.ah-js .ah-reveal:not(.is-inview) {
   opacity: 0;
-  transform: translateY(36px);
-  filter: blur(6px);
+  transform: translateY(28px);
+  filter: blur(4px);
   transition:
     opacity 800ms var(--ah-ease),
     transform 800ms var(--ah-ease),
@@ -760,10 +780,15 @@
   transition-delay: calc(var(--ah-stagger, 0) * 90ms);
 }
 
-.landing-ah .ah-reveal.is-inview {
+.landing-ah.ah-js .ah-reveal.is-inview {
   opacity: 1;
   transform: translateY(0);
   filter: blur(0);
+  transition:
+    opacity 800ms var(--ah-ease),
+    transform 800ms var(--ah-ease),
+    filter 800ms var(--ah-ease);
+  transition-delay: calc(var(--ah-stagger, 0) * 90ms);
 }
 
 .landing-ah .ah-gate-theater {
@@ -780,50 +805,54 @@
 
 .landing-ah .ah-gate-door {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 46%;
-  z-index: 2;
+  top: 12px;
+  bottom: 12px;
+  width: 18%;
+  z-index: 0;
   display: grid;
   place-items: center;
+  padding: 12px;
+  text-align: center;
   background: linear-gradient(180deg, var(--ah-midnight), #120b45);
   color: color-mix(in srgb, var(--ah-white) 80%, transparent);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   transition: transform 900ms var(--ah-ease), opacity 700ms var(--ah-ease);
   pointer-events: none;
+  opacity: 0.85;
 }
 
 .landing-ah .ah-gate-door-left {
-  left: 0;
-  border-radius: 28px 0 0 28px;
+  left: 10px;
+  border-radius: 20px;
   transform-origin: left center;
-  box-shadow: inset -12px 0 24px rgba(0, 0, 0, 0.18);
+  box-shadow: inset -8px 0 18px rgba(0, 0, 0, 0.18);
 }
 
 .landing-ah .ah-gate-door-right {
-  right: 0;
-  border-radius: 0 28px 28px 0;
+  right: 10px;
+  border-radius: 20px;
   transform-origin: right center;
-  box-shadow: inset 12px 0 24px rgba(0, 0, 0, 0.18);
+  box-shadow: inset 8px 0 18px rgba(0, 0, 0, 0.18);
 }
 
 .landing-ah .ah-gate-theater.is-open .ah-gate-door-left {
-  transform: translateX(-104%) rotateY(18deg);
-  opacity: 0.2;
+  transform: translateX(-120%) rotateY(12deg);
+  opacity: 0;
 }
 
 .landing-ah .ah-gate-theater.is-open .ah-gate-door-right {
-  transform: translateX(104%) rotateY(-18deg);
-  opacity: 0.2;
+  transform: translateX(120%) rotateY(-12deg);
+  opacity: 0;
 }
 
 .landing-ah .ah-gate-theater .ah-gate-card {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   margin: 0 auto;
+  max-width: 28rem;
 }
 
 .ah-loading {
@@ -1266,10 +1295,11 @@
   .landing-ah .ah-badge-enter,
   .landing-ah .ah-lede,
   .landing-ah .ah-hero-actions,
-  .landing-ah .ah-reveal {
-    opacity: 1;
-    transform: none;
-    filter: none;
+  .landing-ah .ah-reveal,
+  .landing-ah.ah-js .ah-reveal:not(.is-inview) {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
   }
 
   .landing-ah .ah-strike {

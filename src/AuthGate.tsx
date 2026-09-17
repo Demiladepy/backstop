@@ -140,31 +140,21 @@ export function AuthGate({ children }: { children: ReactNode }) {
   }, [gatePinned])
 
   useEffect(() => {
-    if (prefersReducedMotion()) {
-      setHeroReady(true)
-      setDocPhase('approved')
-      return
-    }
-    const boot = window.setTimeout(() => setHeroReady(true), 80)
-    const phases: Array<'denial' | 'draft' | 'approved'> = ['denial', 'draft', 'approved']
-    let index = 0
-    const timer = window.setInterval(() => {
-      index = (index + 1) % phases.length
-      setDocPhase(phases[index])
-    }, 3200)
-    return () => {
-      window.clearTimeout(boot)
-      window.clearInterval(timer)
-    }
-  }, [])
+    const root = document.querySelector('.landing-ah')
+    if (!root) return
 
-  useEffect(() => {
-    const nodes = document.querySelectorAll('.ah-reveal')
-    if (!nodes.length) return
-    if (prefersReducedMotion()) {
+    root.classList.add('ah-js')
+
+    const nodes = Array.from(root.querySelectorAll('.ah-reveal'))
+    const revealAll = () => {
       nodes.forEach((node) => node.classList.add('is-inview'))
-      return
     }
+
+    if (!nodes.length || prefersReducedMotion()) {
+      revealAll()
+      return () => root.classList.remove('ah-js')
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -174,10 +164,44 @@ export function AuthGate({ children }: { children: ReactNode }) {
           }
         }
       },
-      { threshold: 0.18, rootMargin: '0px 0px -8% 0px' },
+      { threshold: 0.01, rootMargin: '80px 0px' },
     )
     nodes.forEach((node) => observer.observe(node))
-    return () => observer.disconnect()
+
+    const failSafe = window.setTimeout(revealAll, 1200)
+
+    return () => {
+      window.clearTimeout(failSafe)
+      observer.disconnect()
+      root.classList.remove('ah-js')
+    }
+  }, [])
+
+  useEffect(() => {
+    if (prefersReducedMotion()) {
+      setHeroReady(true)
+      return
+    }
+    const boot = window.setTimeout(() => setHeroReady(true), 60)
+    const failSafe = window.setTimeout(() => setHeroReady(true), 1200)
+    return () => {
+      window.clearTimeout(boot)
+      window.clearTimeout(failSafe)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (prefersReducedMotion()) {
+      setDocPhase('approved')
+      return
+    }
+    const phases: Array<'denial' | 'draft' | 'approved'> = ['denial', 'draft', 'approved']
+    let index = 0
+    const timer = window.setInterval(() => {
+      index = (index + 1) % phases.length
+      setDocPhase(phases[index])
+    }, 3200)
+    return () => window.clearInterval(timer)
   }, [])
 
   const enterDemo = async () => {
@@ -243,6 +267,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
                 <a href="#story">Story</a>
                 <a href="#how-it-works">How it works</a>
                 <a href="#human-gate">Human gate</a>
+                <a href="#inside-demo">Inside</a>
+                <a href="#demo-safety">Safety</a>
                 <a href="#sponsors">Stack</a>
               </nav>
               <div className="ah-menu">
@@ -427,14 +453,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
           <section className="ah-section ah-reveal" id="how-it-works" aria-labelledby="how-title">
             <div className="ah-section-head">
-              <p className="ah-badge">The path</p>
+              <p className="ah-badge">How it works</p>
               <h2 id="how-title">One clear path from denial to a draft you control.</h2>
             </div>
             <div className="ah-tint-grid">
               {STEPS.map((step, index) => (
                 <article
                   key={step.title}
-                  className={`ah-tint-card ah-tint-${step.tint} ah-reveal`}
+                  className={`ah-tint-card ah-tint-${step.tint}`}
                   style={{ '--ah-stagger': index } as CSSProperties}
                 >
                   <p className="ah-step-index">{String(index + 1).padStart(2, '0')}</p>
@@ -505,7 +531,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
               <h2 id="safety-title">Built for a safe public demo.</h2>
             </div>
             <div className="ah-white-grid">
-              <article className="ah-white-card ah-reveal" style={{ '--ah-stagger': 0 } as CSSProperties}>
+              <article className="ah-white-card">
                 <p className="ah-badge ah-badge-info">Boundary</p>
                 <h3>Not HIPAA compliant</h3>
                 <p>
@@ -513,14 +539,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
                   documents. Never enter real health information.
                 </p>
               </article>
-              <article className="ah-white-card ah-reveal" style={{ '--ah-stagger': 1 } as CSSProperties}>
+              <article className="ah-white-card">
                 <p className="ah-badge ah-badge-info">Credentials</p>
                 <h3>No credentials</h3>
                 <p>
                   Backstop never asks for insurer logins, passwords, card numbers, or bank details.
                 </p>
               </article>
-              <article className="ah-white-card ah-reveal" style={{ '--ah-stagger': 2 } as CSSProperties}>
+              <article className="ah-white-card">
                 <p className="ah-badge ah-badge-info">Audit</p>
                 <h3>Visible record</h3>
                 <p>
@@ -545,12 +571,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
               </p>
             </div>
             <div className="ah-white-grid ah-white-grid-2">
-              {INSIDE_DEMO.map((item, index) => (
-                <article
-                  key={item.title}
-                  className="ah-white-card ah-reveal"
-                  style={{ '--ah-stagger': index } as CSSProperties}
-                >
+              {INSIDE_DEMO.map((item) => (
+                <article key={item.title} className="ah-white-card">
                   <h3>{item.title}</h3>
                   <p>{item.copy}</p>
                 </article>
@@ -568,12 +590,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
               </p>
             </div>
             <ul className="ah-stack">
-              {STACK.map((item, index) => (
-                <li
-                  key={item.id}
-                  className="ah-white-card ah-reveal"
-                  style={{ '--ah-stagger': index } as CSSProperties}
-                >
+              {STACK.map((item) => (
+                <li key={item.id} className="ah-white-card">
                   <div>
                     <p className="ah-badge ah-badge-info">{item.role}</p>
                     <h3>{item.name}</h3>
