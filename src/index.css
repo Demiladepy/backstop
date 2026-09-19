@@ -1,80 +1,107 @@
 :root {
-  --color-carbon-vellum: #fcfcfc;
-  --color-obsidian: #0a0a13;
-  --color-pitch: #000000;
-  --color-void: #040407;
-  --color-graphite: #08080c;
-  --color-smoke: #757580;
-  --color-ash: #a3a3b3;
-  --color-charcoal: #2a2a32;
-  --color-iris-glow: #6199f6;
-  --color-twilight: #4f4f80;
-  --color-specter-lilac: #dedfee;
-  --color-card-halo: #181826;
+  /* Awesomic zinc scale */
+  --color-obsidian: #09090b;
+  --color-graphite: #18181b;
+  --color-slate: #27272a;
+  --color-iron: #3f3f46;
+  --color-steel: #52525b;
+  --color-fog: #71717a;
+  --color-ash: #a1a1aa;
+  --color-mist: #d4d4d8;
+  --color-cloud: #ececee;
+  --color-paper: #f4f4f5;
+  --color-snow: #ffffff;
+  --color-ember: #ff5a00;
+  --color-magenta-spark: #fe45e2;
 
-  --surface-0: var(--color-obsidian);
-  --surface-1: var(--color-graphite);
-  --surface-2: var(--color-void);
-  --surface-3: var(--color-card-halo);
-  --paper: var(--color-obsidian);
-  --paper-deep: var(--color-void);
-  --paper-muted: var(--color-smoke);
-  --sheet: var(--color-graphite);
-  --ink: var(--color-carbon-vellum);
-  --ink-soft: var(--color-specter-lilac);
-  --muted: var(--color-smoke);
-  --faint: var(--color-ash);
-  --rule: var(--color-charcoal);
-  --rule-strong: var(--color-twilight);
-  --hairline: 1px solid var(--color-charcoal);
-  --signal: var(--color-iris-glow);
-  --signal-deep: var(--color-iris-glow);
-  --signal-ink: var(--color-carbon-vellum);
-  --danger: #d07a72;
-  --success: var(--color-ash);
+  /* Legacy Frame aliases → Awesomic light mapping */
+  --color-carbon-vellum: var(--color-snow);
+  --color-pitch: var(--color-obsidian);
+  --color-void: var(--color-snow);
+  --color-smoke: var(--color-fog);
+  --color-charcoal: var(--color-mist);
+  --color-iris-glow: var(--color-ember);
+  --color-twilight: var(--color-cloud);
+  --color-specter-lilac: var(--color-iron);
+  --color-card-halo: var(--color-snow);
 
-  --font-framegothic: 'Onest', 'Segoe UI', sans-serif;
-  --font-neuemachinainktrap: 'Onest', 'Segoe UI', sans-serif;
-  --display: 'Literata', Georgia, serif;
-  --reading: 'Source Serif 4', Georgia, serif;
-  --body: 'Onest', 'Segoe UI', sans-serif;
-  --label: 'Onest', 'Segoe UI', sans-serif;
+  /* Semantic surfaces */
+  --surface-0: var(--color-paper);
+  --surface-1: var(--color-snow);
+  --surface-2: #fafafa;
+  --surface-3: var(--color-slate);
+  --paper: var(--color-paper);
+  --paper-deep: var(--color-cloud);
+  --paper-muted: var(--color-fog);
+  --sheet: var(--color-snow);
+  --ink: var(--color-obsidian);
+  --ink-soft: var(--color-graphite);
+  --muted: var(--color-steel);
+  --faint: var(--color-fog);
+  --rule: var(--color-cloud);
+  --rule-strong: var(--color-mist);
+  --hairline: 1px solid var(--color-cloud);
+  --signal: var(--color-ember);
+  --signal-deep: var(--color-obsidian);
+  --signal-ink: var(--color-snow);
+  --danger: #b42318;
+  --success: var(--color-steel);
+
+  /* Single family — Cosmica substitute */
+  --font-cosmica: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-framegothic: var(--font-cosmica);
+  --font-neuemachinainktrap: var(--font-cosmica);
+  --display: var(--font-cosmica);
+  --reading: var(--font-cosmica);
+  --body: var(--font-cosmica);
+  --label: var(--font-cosmica);
 
   --text-caption: 12px;
-  --leading-caption: 1.45;
-  --tracking-caption: 0.72px;
+  --leading-caption: 1.64;
+  --tracking-caption: 0;
   --text-body-sm: 14px;
-  --leading-body-sm: 1.5;
-  --text-body: 16px;
+  --leading-body-sm: 1.45;
+  --text-body: 15px;
   --leading-body: 1.45;
-  --tracking-body: 0.16px;
-  --text-subheading: 18px;
-  --leading-subheading: 1.3;
-  --text-heading-sm: 24px;
-  --leading-heading-sm: 1.25;
-  --tracking-heading-sm: -0.72px;
-  --text-heading: 38px;
-  --leading-heading: 1.04;
-  --tracking-heading: -1.33px;
-  --text-heading-lg: 48px;
-  --leading-heading-lg: 1.02;
-  --tracking-heading-lg: -1.92px;
-  --text-display: 80px;
-  --leading-display: 0.96;
-  --tracking-display: -3.6px;
+  --tracking-body: 0;
+  --text-subheading: 20px;
+  --leading-subheading: 1.5;
+  --text-heading-sm: 32px;
+  --leading-heading-sm: 1.5;
+  --tracking-heading-sm: 0;
+  --text-heading: 40px;
+  --leading-heading: 1.28;
+  --tracking-heading: 0;
+  --text-heading-lg: 56px;
+  --leading-heading-lg: 1.28;
+  --tracking-heading-lg: 0;
+  --text-display: 64px;
+  --leading-display: 1.12;
+  --tracking-display: 0;
 
-  --radius: 10px;
-  --radius-sm: 1px;
-  --radius-lg: 10px;
-  --radius-3xl: 24px;
-  --radius-pill: 100px;
-  --radius-nav: 100px;
-  --radius-cards: 10px;
-  --radius-buttons: 100px;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --radius: 14px;
+  --radius-sm: 12px;
+  --radius-lg: 28px;
+  --radius-3xl: 36px;
+  --radius-pill: 10000px;
+  --radius-nav: 10000px;
+  --radius-cards: 36px;
+  --radius-buttons: 14px;
+  --radius-badges: 12px;
+  --radius-inputs: 14px;
   --shadow: none;
   --shadow-lift: none;
-  --halo: inset 0 0 0 1px var(--color-twilight), 0 0 60px rgba(79, 79, 128, 0.15);
-  --video-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+  --shadow-subtle: rgba(255, 255, 255, 0.5) 0px 0.5px 0px 0px inset,
+    rgba(117, 123, 133, 0.4) 0px 9px 14px -5px inset, rgb(44, 46, 52) 0px 0px 0px 1.5px,
+    rgba(0, 0, 0, 0.14) 0px 4px 6px 0px;
+  --shadow-md: rgba(0, 0, 0, 0.04) 0px 4px 12px 0px;
+  --halo: none;
+  --video-shadow: none;
 
   --space-2xs: 0.25rem;
   --space-xs: 0.5rem;
@@ -84,26 +111,30 @@
   --space-xl: 2rem;
   --space-2xl: 3rem;
   --space-3xl: 5rem;
+  --spacing-4: 4px;
   --spacing-8: 8px;
+  --spacing-12: 12px;
   --spacing-16: 16px;
+  --spacing-20: 20px;
   --spacing-24: 24px;
+  --spacing-28: 28px;
   --spacing-32: 32px;
+  --spacing-36: 36px;
   --spacing-40: 40px;
   --spacing-48: 48px;
+  --spacing-64: 64px;
   --spacing-80: 80px;
   --page-gutter: clamp(1rem, 4vw, 2rem);
-  --page-max-width: 1280px;
+  --page-max-width: 1200px;
   --section-gap: 80px;
+  --card-padding: 28px;
+  --element-gap: 8px;
   --rail-width: 220px;
   --props-width: 280px;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --chrome-h: 56px;
-  --cosmic-canvas:
-    radial-gradient(ellipse 80% 55% at 50% 110%, #000b35 0%, transparent 58%),
-    linear-gradient(195deg, #0a0010 0%, #02000a 42%, #0c1d32 100%);
-  --cosmic-mid:
-    radial-gradient(ellipse 70% 50% at 8% 0%, #0e0f20 0%, transparent 55%),
-    linear-gradient(180deg, #0c0c19 0%, #0a0a13 55%, #040407 100%);
+  --cosmic-canvas: var(--color-paper);
+  --cosmic-mid: var(--color-paper);
 
   color: var(--ink);
   background: var(--paper);
@@ -132,9 +163,9 @@ body {
     env(safe-area-inset-right)
     env(safe-area-inset-bottom)
     env(safe-area-inset-left);
-  background: var(--cosmic-canvas);
+  background: var(--color-paper);
   color: var(--ink);
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 button,
@@ -148,16 +179,16 @@ a:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 summary:focus-visible {
-  outline: 2px solid var(--color-iris-glow);
+  outline: 2px solid var(--color-obsidian);
   outline-offset: 3px;
 }
 
 a {
-  color: var(--color-iris-glow);
+  color: var(--color-graphite);
   text-underline-offset: 0.2em;
 }
 
 ::selection {
-  color: var(--color-obsidian);
-  background: var(--color-iris-glow);
+  color: var(--color-snow);
+  background: var(--color-obsidian);
 }
