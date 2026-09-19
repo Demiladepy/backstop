@@ -1,0 +1,29 @@
+FICTIONAL DEMO DOCUMENT — NOT A REAL PATIENT RECORD
+====================================================
+Aetna*  (fictional)     FAX RECEIVED 09/08/2026  14:22
+Ref: DEMO-4821-MRI / member Casey Sample
+
+*** NOTICE OF ADVERSE BENEFIT DETERMINATION ***
+
+Requested: Outpatient MRI lumbar spine (w/o contrast)
+DOS requested: ~ mid-August 2026
+
+DECISION:  DENIED — not medically necessary as submitted.
+
+Reason (as written on letter):
+We denied the requested outpatient MRI because the information
+submitted did not show completion of six weeks of provider-directed
+conservative treatment. The request therefore does not meet the plan's
+medical-necessity criteria for advanced imaging.
+
+Notes scribbled on scan (ignore for PHI — all fictional):
+  - "pt tried PT? ask clinic"
+  - "prior auth # ??"
+  - stamp: COPY / NOT ORIGINAL
+
+Appeal rights (fictional):
+You may submit a written appeal within 180 calendar days of this notice.
+Send to appeals@example.com. Include reference DEMO-4821-MRI.
+
+This address and every organization named here are fictional and intended
+only for the Backstop public hackathon demonstration. Do not use real PHI.

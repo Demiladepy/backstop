@@ -1,12 +1,12 @@
 /**
- * Live smoke against the canonical Vercel frontend.
- * Override with LIVE_URL for the Convex static mirror if needed.
+ * Live smoke against the canonical Convex static host.
+ * Override with LIVE_URL if needed.
  * Run: npx playwright test --config=e2e/live-vercel.config.ts
  */
 import { expect, test } from "@playwright/test";
 
 const LIVE =
-  process.env.LIVE_URL ?? "https://backstop-xi.vercel.app";
+  process.env.LIVE_URL ?? "https://festive-roadrunner-713.convex.site";
 
 test.describe.configure({ mode: "serial" });
 
@@ -41,7 +41,7 @@ test("auth: Enter private demo reaches the case board", async ({ page }) => {
   ).toBeUndefined();
 });
 
-test("hero: sample case through approve, simulate reply, Watch beat", async ({
+test("hero: sample case through grounding cite and approve", async ({
   page,
 }) => {
   test.setTimeout(300_000);
@@ -83,7 +83,6 @@ test("hero: sample case through approve, simulate reply, Watch beat", async ({
 
   await page.getByRole("button", { name: /Evidence/ }).click();
 
-  // Recover if intake seed did not attach (retry demo letter)
   const seedBtn = page.getByRole("button", {
     name: /Use the fictional demo (letter|packet)/i,
   });
@@ -97,7 +96,6 @@ test("hero: sample case through approve, simulate reply, Watch beat", async ({
       .first(),
   ).toBeVisible({ timeout: 90_000 });
 
-  // Wait for auto draft; if stuck, trigger manual draft
   await page.getByRole("button", { name: /Appeal/ }).click();
   const approveBtn = page.getByRole("button", {
     name: /Approve and send appeal/i,
@@ -126,6 +124,15 @@ test("hero: sample case through approve, simulate reply, Watch beat", async ({
 
   await expect(approveBtn).toBeVisible({ timeout: 120_000 });
   await expect(approveBtn).toBeEnabled();
+
+  const citeChip = page.locator(".cite-chip, button.cite").first();
+  if (await citeChip.isVisible().catch(() => false)) {
+    await citeChip.click();
+    await expect(
+      page.getByRole("button", { name: /Open original/i }),
+    ).toBeVisible({ timeout: 20_000 });
+  }
+
   await approveBtn.click();
 
   const emailTab = page.locator(
@@ -138,26 +145,14 @@ test("hero: sample case through approve, simulate reply, Watch beat", async ({
   await expect(page.getByText(/The correspondence file is quiet/i)).toHaveCount(
     0,
   );
-  const simulate = page.getByRole("button", {
-    name: /Simulate fictional payer reply/i,
-  });
-  await expect(simulate).toBeVisible({ timeout: 60_000 });
-  await simulate.click();
   await expect(
-    page.getByText(/FICTIONAL DEMO REPLY|inbound|received/i).first(),
-  ).toBeVisible({ timeout: 60_000 });
+    page.getByRole("button", { name: /Simulate fictional payer reply/i }),
+  ).toHaveCount(0);
 
-  await page.getByRole("button", { name: /Watch/ }).click();
-  const watchBeat = page.getByRole("button", {
-    name: /Run demo Watch beat/i,
-  });
-  await expect(watchBeat).toBeVisible({ timeout: 20_000 });
-  await watchBeat.click();
+  await page.getByRole("button", { name: /Record/ }).click();
   await expect(
-    page
-      .getByText(/deadline|Active watches|monitor|form|Watch this/i)
-      .first(),
-  ).toBeVisible({ timeout: 120_000 });
+    page.getByText(/Firecrawl|OpenAI|AgentMail|How this case ran/i).first(),
+  ).toBeVisible({ timeout: 30_000 });
 
   const fatal = consoleErrors.filter((line) =>
     /Auth provider discovery|Failed to authenticate|VITE_CONVEX_URL/i.test(

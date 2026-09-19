@@ -5,7 +5,7 @@
 import { expect, test } from "@playwright/test";
 
 const LIVE =
-  process.env.LIVE_URL ?? "https://backstop-xi.vercel.app";
+  process.env.LIVE_URL ?? "https://festive-roadrunner-713.convex.site";
 
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -78,7 +78,18 @@ test("record DEMO.md hero path", async ({ page }) => {
     )
     .toMatch(/ready|drafting/);
   await expect(approveBtn).toBeVisible({ timeout: 120_000 });
-  await pause(4_000);
+  await pause(2_000);
+
+  const citeChip = page.locator(".cite-chip, button.cite, [data-cite]").first();
+  if (await citeChip.isVisible().catch(() => false)) {
+    await citeChip.click();
+    await pause(2_000);
+    const openOriginal = page.getByRole("button", { name: /Open original/i });
+    if (await openOriginal.isVisible().catch(() => false)) {
+      await pause(2_500);
+    }
+  }
+  await pause(2_000);
 
   await approveBtn.click();
   const emailTab = page.locator(
@@ -89,30 +100,6 @@ test("record DEMO.md hero path", async ({ page }) => {
   await pause(2_000);
   await emailTab.click();
   await pause(2_500);
-
-  const simulate = page.getByRole("button", {
-    name: /Simulate fictional payer reply/i,
-  });
-  await expect(simulate).toBeVisible({ timeout: 60_000 });
-  await simulate.click();
-  await expect(
-    page.getByText(/FICTIONAL DEMO REPLY|inbound|received/i).first(),
-  ).toBeVisible({ timeout: 60_000 });
-  await pause(3_000);
-
-  await page.getByRole("button", { name: /Watch/ }).click();
-  const watchBeat = page.getByRole("button", {
-    name: /Run demo Watch beat/i,
-  });
-  await expect(watchBeat).toBeVisible({ timeout: 20_000 });
-  await pause(1_500);
-  await watchBeat.click();
-  await expect(
-    page
-      .getByText(/deadline|Active watches|monitor|form|Watch this/i)
-      .first(),
-  ).toBeVisible({ timeout: 120_000 });
-  await pause(4_000);
 
   await page.getByRole("button", { name: /Record/ }).click();
   await pause(3_000);

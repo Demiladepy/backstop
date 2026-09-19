@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const LIVE =
-  process.env.LIVE_URL ?? "https://backstop-xi.vercel.app";
+  process.env.LIVE_URL ?? "https://festive-roadrunner-713.convex.site";
 
 export default defineConfig({
   testDir: ".",

@@ -71,8 +71,8 @@ action is audited.
 
 - Local: `npm run lint`, `npm run build`, `npm test`, `npm run test:e2e`
 - Sponsor keys on both dev and prod Convex deployments
-- Live app: https://backstop-xi.vercel.app
-- Convex static host: https://festive-roadrunner-713.convex.site
+- Live app (canonical): https://festive-roadrunner-713.convex.site
+- Optional Vercel mirror: https://backstop-xi.vercel.app
 - Public repository: https://github.com/Demiladepy/backstop
 
 ### Day 1 — Harden hero + real AgentMail
@@ -127,7 +127,8 @@ action is audited.
 
 ## Submission links
 
-- Live app: https://backstop-xi.vercel.app
+- Live app: https://festive-roadrunner-713.convex.site
+- Optional mirror: https://backstop-xi.vercel.app
 - Public repository: https://github.com/Demiladepy/backstop
 - Demo video: https://github.com/Demiladepy/backstop/releases/download/demo-video/backstop-hero-demo.webm
 - Demo release page: https://github.com/Demiladepy/backstop/releases/tag/demo-video

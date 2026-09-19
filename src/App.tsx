@@ -111,6 +111,49 @@ function displayParagraphText(text: string) {
   return text.replace(/^\[UNVERIFIED\]\s*/i, '').trim()
 }
 
+const DENIAL_REASON_RE =
+  /\b(denied|deny|denial|not covered|not medically necessary|medical-necessity|prior auth|adverse benefit)\b/i
+
+const SAMPLE_DENIAL_HIGHLIGHT =
+  'We denied the requested outpatient MRI because the information submitted did not show completion of six weeks of provider-directed conservative treatment.'
+
+/** Split excerpt into plain / highlighted segments for the grounding pane. */
+function denialHighlightSegments(excerpt: string): Array<{ text: string; hit: boolean }> {
+  const normalized = excerpt.replace(/\s+/g, ' ').trim()
+  if (!normalized) return [{ text: excerpt, hit: false }]
+
+  const pinned = normalized.includes(SAMPLE_DENIAL_HIGHLIGHT)
+    ? SAMPLE_DENIAL_HIGHLIGHT
+    : null
+
+  let hitText = pinned
+  if (!hitText) {
+    const sentences = normalized.split(/(?<=[.!?])\s+/)
+    hitText = sentences.find((sentence) => DENIAL_REASON_RE.test(sentence)) ?? null
+  }
+  if (!hitText) return [{ text: excerpt, hit: false }]
+
+  const index = excerpt.indexOf(hitText)
+  if (index < 0) {
+    const lower = excerpt.toLowerCase()
+    const needle = hitText.toLowerCase()
+    const soft = lower.indexOf(needle)
+    if (soft < 0) return [{ text: excerpt, hit: false }]
+    const actual = excerpt.slice(soft, soft + hitText.length)
+    return [
+      { text: excerpt.slice(0, soft), hit: false },
+      { text: actual, hit: true },
+      { text: excerpt.slice(soft + actual.length), hit: false },
+    ].filter((part) => part.text.length > 0)
+  }
+
+  return [
+    { text: excerpt.slice(0, index), hit: false },
+    { text: hitText, hit: true },
+    { text: excerpt.slice(index + hitText.length), hit: false },
+  ].filter((part) => part.text.length > 0)
+}
+
 function humanizeEvent(event: string) {
   return event
     .replace(/^external\./, '')
@@ -190,11 +233,13 @@ function Workspace() {
   const cases = useQuery(api.cases.listCases, { limit: 50 })
   const approvals = useQuery(api.cases.pendingApprovals, { limit: 50 })
   const [selectedCaseId, setSelectedCaseId] = useState<Id<'cases'> | null>(null)
-  const [creating, setCreating] = useState(false)
+  const [creating, setCreating] = useState<false | 'sample' | 'upload'>(false)
+  const [openTab, setOpenTab] = useState<CaseTab | null>(null)
 
-  const openCase = (caseId: Id<'cases'>) => {
+  const openCase = (caseId: Id<'cases'>, opts?: { focusEvidence?: boolean }) => {
     setSelectedCaseId(caseId)
     setCreating(false)
+    setOpenTab(opts?.focusEvidence ? 'evidence' : null)
   }
 
   return (
@@ -231,21 +276,27 @@ function Workspace() {
           <Intake
             onCancel={() => setCreating(false)}
             onCreated={openCase}
+            mode={creating === 'upload' ? 'upload' : 'sample'}
           />
         ) : selectedCaseId ? (
           <CaseWorkspace
             key={selectedCaseId}
             caseId={selectedCaseId}
             cases={cases ?? []}
-            onSelect={openCase}
-            onNew={() => setCreating(true)}
-            onBoard={() => setSelectedCaseId(null)}
+            onSelect={(id) => openCase(id)}
+            onNew={() => setCreating('sample')}
+            onBoard={() => {
+              setSelectedCaseId(null)
+              setOpenTab(null)
+            }}
+            initialTab={openTab ?? undefined}
           />
         ) : (
           <CaseBoard
             cases={cases}
             onSelect={openCase}
-            onNew={() => setCreating(true)}
+            onNew={() => setCreating('sample')}
+            onUpload={() => setCreating('upload')}
           />
         )}
       </main>
@@ -269,36 +320,19 @@ function CaseBoard({
   cases,
   onSelect,
   onNew,
+  onUpload,
 }: {
   cases: Doc<'cases'>[] | undefined
   onSelect: (id: Id<'cases'>) => void
   onNew: () => void
+  onUpload: () => void
 }) {
-  const seedDemoCaseload = useMutation(api.cases.seedDemoCaseload)
-  const [seedingBoard, setSeedingBoard] = useState(false)
-  const [boardError, setBoardError] = useState('')
-
   if (cases === undefined) {
     return <BoardSkeleton />
   }
 
-  const ordered = sortBoardCases(cases)
-  const needsReview = ordered.filter(
-    (item) => item.status === 'awaiting_approval' && !isDemoBoardFiller(item.title),
-  )
-  const hasDemoRows = cases.some((item) => isDemoBoardFiller(item.title))
-
-  const loadCaseload = async () => {
-    setBoardError('')
-    setSeedingBoard(true)
-    try {
-      await seedDemoCaseload({})
-    } catch (caught) {
-      setBoardError(readableError(caught))
-    } finally {
-      setSeedingBoard(false)
-    }
-  }
+  const ordered = sortBoardCases(cases).filter((item) => !isDemoBoardFiller(item.title))
+  const needsReview = ordered.filter((item) => item.status === 'awaiting_approval')
 
   return (
     <section className="board page-enter" aria-labelledby="board-title">
@@ -308,28 +342,17 @@ function CaseBoard({
             <p className="kicker">Your workspace</p>
             <h1 id="board-title">A clear next step.</h1>
             <p className="board-lede">
-              Open a sample denial case. Everything after that stays on this board.
+              Open a sample denial case, or upload your own sample file. Everything after that stays on this board.
             </p>
           </div>
-          <button
-            className="primary-action"
-            type="button"
-            onClick={onNew}
-            onPointerMove={(event) => {
-              const rect = event.currentTarget.getBoundingClientRect()
-              event.currentTarget.style.setProperty(
-                '--mx',
-                `${((event.clientX - rect.left) / rect.width) * 100}%`,
-              )
-              event.currentTarget.style.setProperty(
-                '--my',
-                `${((event.clientY - rect.top) / rect.height) * 100}%`,
-              )
-            }}
-          >
-            <span className="btn-shine" aria-hidden="true" />
-            Start a sample case
-          </button>
+          <div className="board-toolbar-actions">
+            <button className="primary-action" type="button" onClick={onNew}>
+              Start a sample case
+            </button>
+            <button className="secondary-action" type="button" onClick={onUpload}>
+              Upload a denial file
+            </button>
+          </div>
         </header>
 
         {needsReview.length > 0 && (
@@ -351,86 +374,52 @@ function CaseBoard({
         <div className="board-register">
           <div className="register-heading">
             <span>Cases</span>
-            <span>{String(cases.length).padStart(2, '0')}</span>
+            <span>{String(ordered.length).padStart(2, '0')}</span>
           </div>
-          {cases.length === 0 ? (
+          {ordered.length === 0 ? (
             <div className="empty-register">
               <div className="empty-visual" aria-hidden="true">
                 <BrandMark size={42} />
               </div>
               <h2>No case file yet</h2>
               <p>
-                Start with a fictional denial packet, or load a small sample
-                caseload so the board looks like a working list.
+                Start with a fictional denial packet, or upload your own sample denial file.
               </p>
               <div className="empty-register-actions">
                 <button className="secondary-action" type="button" onClick={onNew}>
                   Create your first case
                 </button>
-                <button
-                  className="text-button"
-                  type="button"
-                  disabled={seedingBoard}
-                  onClick={() => void loadCaseload()}
-                >
-                  {seedingBoard ? 'Loading sample caseload…' : 'Load sample caseload'}
+                <button className="text-button" type="button" onClick={onUpload}>
+                  Upload a denial file
                 </button>
               </div>
-              {boardError && <p className="form-error" role="alert">{boardError}</p>}
             </div>
           ) : (
-            <>
-              {!hasDemoRows && (
-                <div className="board-caseload-hint">
-                  <p>Optional: add filler rows for demo density (not the live hero path).</p>
-                  <button
-                    className="text-button"
-                    type="button"
-                    disabled={seedingBoard}
-                    onClick={() => void loadCaseload()}
-                  >
-                    {seedingBoard ? 'Loading…' : 'Add sample caseload rows'}
-                  </button>
-                </div>
-              )}
-              <ol className="case-list">
-                {ordered.map((item, index) => {
-                  const deadline = deadlineLabel(item.deadlineAt)
-                  const filler = isDemoBoardFiller(item.title)
-                  return (
-                    <li key={item._id}>
-                      <button
-                        type="button"
-                        className={filler ? 'is-filler' : undefined}
-                        disabled={filler}
-                        title={filler ? 'Board filler for demo density. Start a sample case for the live path.' : undefined}
-                        onClick={() => {
-                          if (!filler) onSelect(item._id)
-                        }}
-                      >
-                        <span className="case-index">{String(index + 1).padStart(2, '0')}</span>
-                        <span className="case-title">
-                          <strong>{item.title}</strong>
-                          <small>
-                            {filler
-                              ? 'List filler · not the live hero path'
-                              : (item.counterpartyName ?? 'Payer not named')}
-                          </small>
-                        </span>
-                        <span className={`status-signal status-${item.status}`}>
-                          {filler ? 'Demo list' : statusCopy[item.status]}
-                        </span>
-                        <span className={`case-deadline urgency-${deadline.urgency}`}>
-                          {deadline.text}
-                        </span>
-                        <span className="arrow" aria-hidden="true">{filler ? '·' : '→'}</span>
-                      </button>
-                    </li>
-                  )
-                })}
-              </ol>
-              {boardError && <p className="form-error" role="alert">{boardError}</p>}
-            </>
+            <ol className="case-list">
+              {ordered.map((item, index) => {
+                const deadline = deadlineLabel(item.deadlineAt)
+                return (
+                  <li key={item._id}>
+                    <button type="button" onClick={() => onSelect(item._id)}>
+                      <span className="case-index">{String(index + 1).padStart(2, '0')}</span>
+                      <span className="case-title">
+                        <strong>{item.title}</strong>
+                        <small>{item.counterpartyName ?? 'Payer not named'}</small>
+                      </span>
+                      <span className={`status-signal status-${item.status}`}>
+                        {statusCopy[item.status]}
+                      </span>
+                      <span className={`case-deadline urgency-${deadline.urgency}`}>
+                        {deadline.text}
+                      </span>
+                      <span className="arrow" aria-hidden="true">
+                        →
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ol>
           )}
         </div>
       </div>
@@ -460,13 +449,17 @@ function BoardSkeleton() {
 function Intake({
   onCancel,
   onCreated,
+  mode = 'sample',
 }: {
   onCancel: () => void
-  onCreated: (id: Id<'cases'>) => void
+  onCreated: (id: Id<'cases'>, opts?: { focusEvidence?: boolean }) => void
+  mode?: 'sample' | 'upload'
 }) {
   const createCase = useMutation(api.cases.createCase)
   const seedSamplePacket = useAction(api.sampleDenial.seedSamplePacket)
-  const [title, setTitle] = useState('Sample denial - outpatient MRI')
+  const [title, setTitle] = useState(
+    mode === 'upload' ? 'Uploaded denial sample' : 'Sample denial - outpatient MRI',
+  )
   const [payer, setPayer] = useState('Aetna (fictional demo)')
   const [email, setEmail] = useState('appeals@example.com')
   const [deadline, setDeadline] = useState(() => {
@@ -493,8 +486,12 @@ function Intake({
         counterpartyEmail: email,
         deadlineAt: deadline ? new Date(`${deadline}T12:00:00`).getTime() : undefined,
       })
-      await seedSamplePacket({ caseId })
-      onCreated(caseId)
+      if (mode === 'sample') {
+        await seedSamplePacket({ caseId })
+        onCreated(caseId)
+      } else {
+        onCreated(caseId, { focusEvidence: true })
+      }
     } catch (caught) {
       setError(readableError(caught))
     } finally {
@@ -505,16 +502,20 @@ function Intake({
   return (
     <section className="intake page-enter" aria-labelledby="intake-title">
       <div className="intake-shell">
-        <button className="back-button" type="button" onClick={onCancel}>← Cases</button>
+        <button className="back-button" type="button" onClick={onCancel}>
+          ← Cases
+        </button>
 
         <div className="intake-card">
           <header className="intake-card-head">
             <p className="kicker">New case</p>
-            <h1 id="intake-title">Begin with the envelope.</h1>
+            <h1 id="intake-title">
+              {mode === 'upload' ? 'Upload a sample denial.' : 'Begin with the envelope.'}
+            </h1>
             <p className="intake-lede">
-              Who issued the denial? Opening the case attaches a fictional
-              denial letter and EOB, then starts parse → research → draft.
-              You still approve before anything is sent.
+              {mode === 'upload'
+                ? 'Create the case, then attach your own fictional or de-identified sample file on Evidence. Parse → research → draft still runs. You still approve before anything is sent.'
+                : 'Who issued the denial? Opening the case attaches a fictional denial letter and EOB, then starts parse → research → draft. You still approve before anything is sent.'}
             </p>
           </header>
 
@@ -581,7 +582,13 @@ function Intake({
                 }}
               >
                 <span className="btn-shine" aria-hidden="true" />
-                {busy ? 'Attaching sample packet…' : 'Open case file'}
+                {busy
+                  ? mode === 'upload'
+                    ? 'Opening case…'
+                    : 'Attaching sample packet…'
+                  : mode === 'upload'
+                    ? 'Create case and open Evidence'
+                    : 'Open case file'}
               </button>
               <button className="text-button" type="button" onClick={onCancel}>
                 Cancel
@@ -603,16 +610,18 @@ function CaseWorkspace({
   onSelect,
   onNew,
   onBoard,
+  initialTab,
 }: {
   caseId: Id<'cases'>
   cases: Doc<'cases'>[]
   onSelect: (id: Id<'cases'>) => void
   onNew: () => void
   onBoard: () => void
+  initialTab?: CaseTab
 }) {
   const detail = useQuery(api.cases.getCase, { caseId })
   const thread = useQuery(api.email.listThread, { caseId })
-  const [tab, setTab] = useState<CaseTab>('case')
+  const [tab, setTab] = useState<CaseTab>(initialTab ?? 'case')
 
   if (detail === undefined) return <CaseSkeleton onBoard={onBoard} />
   if (detail === null) {
@@ -986,6 +995,13 @@ function EvidenceView({
             >
               Preview sample EOB ↘
             </a>
+            <a
+              className="sample-download"
+              href="/samples/messy-denial-scan.txt"
+              download="backstop-messy-denial-scan.txt"
+            >
+              Messy fax-style sample ↘
+            </a>
           </>
         ) : (
           <div className="document-grid">
@@ -1136,10 +1152,23 @@ function AppealView({
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
+  const [activeSourceId, setActiveSourceId] = useState<string | null>(null)
+  const [activeParagraph, setActiveParagraph] = useState<number | null>(null)
 
   const sourceNumbers = useMemo(() => sourceNumberMap(detail.sources), [detail.sources])
   const sourcesOrdered = useMemo(() => orderedSources(detail.sources), [detail.sources])
   const denialSources = detail.sources.filter((source) => source.kind === 'document')
+  const primaryDenial =
+    denialSources.find((source) => /denial/i.test(source.title)) ?? denialSources[0]
+  const activeSource = activeSourceId
+    ? detail.sources.find((source) => source._id === activeSourceId) ?? null
+    : null
+
+  const selectCitation = (sourceId: string, paragraphIndex?: number) => {
+    setActiveSourceId(sourceId)
+    if (typeof paragraphIndex === 'number') setActiveParagraph(paragraphIndex)
+    highlightCitationNote(sourceId)
+  }
   const isFollowUp =
     Boolean(latest) &&
     latest!.status === 'pending_approval' &&
@@ -1166,7 +1195,7 @@ function AppealView({
     return (
       <div className="draft-empty">
         <div>
-          <p className="kicker">Appeal desk / grounded generation</p>
+          <p className="kicker">Appeal desk</p>
           <h2>
             {latest?.status === 'rejected'
               ? 'Prepare a considered revision.'
@@ -1221,24 +1250,38 @@ function AppealView({
 
   return (
     <div className="appeal-layout">
-      <div className="appeal-reading">
-        {denialSources.length > 0 && (
-          <aside className="denial-compare" aria-label="Case documents">
-            <p className="props-label">Case documents</p>
-            {denialSources.map((source) => (
-              <div className="denial-compare-item" key={source._id}>
-                <p className="denial-compare-title">{source.title}</p>
-                <blockquote>
-                  {source.excerpt.slice(0, denialSources.length > 1 ? 220 : 420)}
-                  {source.excerpt.length > (denialSources.length > 1 ? 220 : 420) ? '…' : ''}
-                </blockquote>
-              </div>
-            ))}
-            <button className="text-button" type="button" onClick={() => setTab('evidence')}>
-              Open full evidence →
-            </button>
-          </aside>
-        )}
+      <div className="appeal-reading appeal-grounding">
+        <aside className="denial-compare" aria-label="Denial letter">
+          <p className="props-label">Denial</p>
+          {primaryDenial ? (
+            <div className="denial-compare-item">
+              <p className="denial-compare-title">{primaryDenial.title}</p>
+              <blockquote className="denial-full">
+                {denialHighlightSegments(primaryDenial.excerpt).map((part, index) =>
+                  part.hit ? (
+                    <mark key={index} className="denial-hit">
+                      {part.text}
+                    </mark>
+                  ) : (
+                    <span key={index}>{part.text}</span>
+                  ),
+                )}
+              </blockquote>
+            </div>
+          ) : (
+            <p className="field-help">No denial letter on this case yet.</p>
+          )}
+          {denialSources.length > 1 && (
+            <p className="field-help">
+              {denialSources.length - 1} more document
+              {denialSources.length - 1 === 1 ? '' : 's'} on Evidence.
+            </p>
+          )}
+          <button className="text-button" type="button" onClick={() => setTab('evidence')}>
+            Open full evidence →
+          </button>
+        </aside>
+
         <article className="appeal-paper">
           <div className="paper-folio">
             <span>
@@ -1256,20 +1299,31 @@ function AppealView({
           </label>
           <div className="letter-address">
             <span>To</span>
-            <p><strong>{detail.case.counterpartyName}</strong><br />{detail.case.counterpartyEmail}</p>
+            <p>
+              <strong>{detail.case.counterpartyName}</strong>
+              <br />
+              {detail.case.counterpartyEmail}
+            </p>
           </div>
           <div className="draft-body">
             {paragraphs.map((paragraph, index) => (
-              <div className={`draft-paragraph ${paragraph.verification}`} key={`${latest._id}-${index}`}>
+              <div
+                className={`draft-paragraph ${paragraph.verification}${
+                  activeParagraph === index ? ' is-active' : ''
+                }`}
+                key={`${latest._id}-${index}`}
+              >
                 {editing ? (
                   <textarea
                     value={paragraph.text}
                     aria-label={`Paragraph ${index + 1}`}
-                    onChange={(event) => setParagraphs((current) =>
-                      current.map((item, itemIndex) =>
-                        itemIndex === index ? { ...item, text: event.target.value } : item,
-                      ),
-                    )}
+                    onChange={(event) =>
+                      setParagraphs((current) =>
+                        current.map((item, itemIndex) =>
+                          itemIndex === index ? { ...item, text: event.target.value } : item,
+                        ),
+                      )
+                    }
                   />
                 ) : (
                   <p>{displayParagraphText(paragraph.text)}</p>
@@ -1281,9 +1335,9 @@ function AppealView({
                     paragraph.sourceIds.map((sourceId) => (
                       <button
                         type="button"
-                        className="cite-chip"
+                        className={`cite-chip${activeSourceId === sourceId ? ' is-active' : ''}`}
                         key={sourceId}
-                        onClick={() => highlightCitationNote(sourceId)}
+                        onClick={() => selectCitation(sourceId, index)}
                       >
                         [{sourceNumbers.get(sourceId) ?? '?'}]
                       </button>
@@ -1298,6 +1352,48 @@ function AppealView({
             <p>For review by the case owner. Not legal or medical advice.</p>
           </div>
         </article>
+
+        <aside className="policy-proof" aria-label="Policy proof">
+          <p className="props-label">Policy proof</p>
+          {activeSource ? (
+            <div className="policy-proof-card">
+              <p className="policy-proof-kind">
+                {activeSource.kind === 'policy' ? 'Insurer policy clause' : 'Case document'} · [
+                {sourceNumbers.get(activeSource._id) ?? '?'}]
+              </p>
+              <h3>{activeSource.title}</h3>
+              <blockquote>
+                “{activeSource.quotedText ?? activeSource.excerpt}”
+              </blockquote>
+              {activeSource.retrievedAt && (
+                <p className="field-help">
+                  Retrieved {formatDate(activeSource.retrievedAt)}
+                </p>
+              )}
+              {activeSource.url ? (
+                <a
+                  className="primary-action policy-proof-open"
+                  href={activeSource.url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open original ↗
+                </a>
+              ) : (
+                <p className="field-help">No live URL on this source.</p>
+              )}
+              {activeSource.kind !== 'policy' && (
+                <p className="field-help">
+                  Pick a cited policy chip in the appeal to see the insurer’s own clause.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="policy-proof-empty">
+              <p>Click a citation in the appeal to see the insurer’s own clause.</p>
+            </div>
+          )}
+        </aside>
       </div>
 
       <aside className="review-margin">
@@ -1313,7 +1409,8 @@ function AppealView({
           </p>
           {unverifiedCount > 0 && (
             <p className="unverified-count" role="status">
-              {unverifiedCount} unverified {unverifiedCount === 1 ? 'claim' : 'claims'}. Review before approving.
+              {unverifiedCount} unverified {unverifiedCount === 1 ? 'claim' : 'claims'}. Review before
+              approving.
             </p>
           )}
         </div>
@@ -1325,18 +1422,26 @@ function AppealView({
                   className="primary-action"
                   type="button"
                   disabled={Boolean(busy)}
-                  onClick={() => void run('save', async () => {
-                    await editDraft({ draftId: latest._id, subject, paragraphs })
-                    setEditing(false)
-                  })}
+                  onClick={() =>
+                    void run('save', async () => {
+                      await editDraft({ draftId: latest._id, subject, paragraphs })
+                      setEditing(false)
+                    })
+                  }
                 >
                   {busy === 'save' ? 'Saving exact draft…' : 'Save draft changes'}
                 </button>
-                <button className="text-button" type="button" onClick={() => {
-                  setSubject(latest.subject)
-                  setParagraphs(latest.paragraphs)
-                  setEditing(false)
-                }}>Discard edits</button>
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={() => {
+                    setSubject(latest.subject)
+                    setParagraphs(latest.paragraphs)
+                    setEditing(false)
+                  }}
+                >
+                  Discard edits
+                </button>
               </>
             ) : (
               <>
@@ -1360,7 +1465,9 @@ function AppealView({
                 </button>
               </>
             )}
-            {!canSend && <p className="form-error">Payer name and email are required before approval.</p>}
+            {!canSend && (
+              <p className="form-error">Payer name and email are required before approval.</p>
+            )}
           </div>
         )}
         {rejecting && (
@@ -1376,35 +1483,61 @@ function AppealView({
           >
             <label>
               <span>Why should this be redrafted?</span>
-              <textarea value={reason} onChange={(event) => setReason(event.target.value)} minLength={3} maxLength={500} required />
+              <textarea
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+                minLength={3}
+                maxLength={500}
+                required
+              />
             </label>
             <button className="reject-action" type="submit" disabled={Boolean(busy)}>
               {busy === 'reject' ? 'Recording rejection…' : 'Reject and return to drafting'}
             </button>
-            <button className="text-button" type="button" onClick={() => setRejecting(false)}>Keep reviewing</button>
+            <button className="text-button" type="button" onClick={() => setRejecting(false)}>
+              Keep reviewing
+            </button>
           </form>
         )}
         <div className="citation-register">
           <span>Citation notes</span>
           {sourcesOrdered.map((source) => (
-            <div id={`source-note-${source._id}`} key={source._id}>
+            <div
+              id={`source-note-${source._id}`}
+              key={source._id}
+              className={activeSourceId === source._id ? 'is-active' : undefined}
+            >
               <b>[{sourceNumbers.get(source._id) ?? '?'}]</b>
               <p>
                 <strong>{source.title}</strong>
-                {source.excerpt.slice(0, 170)}{source.excerpt.length > 170 ? '…' : ''}
+                {source.excerpt.slice(0, 170)}
+                {source.excerpt.length > 170 ? '…' : ''}
                 <span className="citation-actions">
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() => selectCitation(source._id)}
+                  >
+                    Show in proof
+                  </button>
                   <button type="button" className="text-button" onClick={() => setTab('evidence')}>
                     Open in Evidence
                   </button>
                   {source.url && (
-                    <a href={source.url} target="_blank" rel="noreferrer">Original ↗</a>
+                    <a href={source.url} target="_blank" rel="noreferrer">
+                      Original ↗
+                    </a>
                   )}
                 </span>
               </p>
             </div>
           ))}
         </div>
-        {error && <p className="form-error" role="alert">{error}</p>}
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
       </aside>
     </div>
   )
@@ -1419,9 +1552,6 @@ function EmailView({
   thread: unknown[] | undefined
   setTab: (tab: CaseTab) => void
 }) {
-  const simulateInboundReply = useMutation(api.email.simulateInboundReply)
-  const [simulating, setSimulating] = useState(false)
-  const [error, setError] = useState('')
   const messages = [...detail.messages].sort((a, b) => a.createdAt - b.createdAt)
   const hasOutbound = messages.some((message) => message.direction === 'outbound')
   const hasInbound = messages.some((message) => message.direction === 'inbound')
@@ -1435,23 +1565,11 @@ function EmailView({
     !followUpReady &&
     (detail.case.status === 'drafting' || detail.case.status === 'awaiting_reply')
 
-  const simulate = async () => {
-    setError('')
-    setSimulating(true)
-    try {
-      await simulateInboundReply({ caseId: detail.case._id })
-    } catch (caught) {
-      setError(readableError(caught))
-    } finally {
-      setSimulating(false)
-    }
-  }
-
   return (
     <div className="email-layout">
       <header className="thread-header">
         <div>
-          <p className="kicker">Correspondence / immutable copy</p>
+          <p className="kicker">Correspondence</p>
           <h2>{messages[0]?.subject ?? `Appeal to ${detail.case.counterpartyName}`}</h2>
         </div>
         <dl>
@@ -1511,21 +1629,11 @@ function EmailView({
         </div>
       )}
       {hasOutbound && !hasInbound && (
-        <div className="review-actions">
-          <button
-            className="secondary-action"
-            type="button"
-            disabled={simulating}
-            onClick={() => void simulate()}
-          >
-            {simulating ? 'Injecting fictional reply…' : 'Simulate fictional payer reply'}
-          </button>
-          <p className="field-help">
-            Demo helper only. Creates a fake inbound message and drafts a follow-up for your approval.
-          </p>
-        </div>
+        <p className="field-help">
+          Inbound payer replies appear here when they arrive. Follow-ups still need your approval
+          before send.
+        </p>
       )}
-      {error && <p className="form-error" role="alert">{error}</p>}
       {thread === undefined && detail.case.agentMailInboxId && (
         <p className="thread-sync" aria-live="polite">Checking the verified inbox…</p>
       )}
@@ -1565,37 +1673,16 @@ function WatchView({
     }
   }
 
-  const runDemoWatchBeat = async () => {
-    await run('demo', async () => {
-      await ensureDemoDeadline({ caseId: detail.case._id })
-      await watchDeadline({ caseId: detail.case._id })
-      await fillPublicForm({
-        caseId: detail.case._id,
-        formUrl: policyUrl || undefined,
-      })
-    })
-  }
-
   return (
     <div className="overview-grid">
       <section className="next-step">
-        <p className="kicker">Deadline / Firecrawl monitor</p>
+        <p className="kicker">Watch</p>
         <h2>Watch the deadline.</h2>
         <p>
           Watch the appeal deadline and a public policy page. Changes surface here
           and in the record. Nothing is submitted for you.
         </p>
         <div className="review-actions">
-          <button
-            className="primary-action"
-            type="button"
-            disabled={Boolean(busy)}
-            onClick={() => void runDemoWatchBeat()}
-          >
-            {busy === 'demo'
-              ? 'Running demo Watch beat…'
-              : 'Run demo Watch beat'}
-          </button>
           <button
             className="secondary-action"
             type="button"
@@ -1694,7 +1781,7 @@ function AuditView({ audit }: { audit: Doc<'auditLog'>[] }) {
   return (
     <div className="audit-layout">
       <header>
-        <p className="kicker">Provenance / append-only record</p>
+        <p className="kicker">Record</p>
         <h2>How this case ran.</h2>
         <p>Firecrawl, OpenAI, AgentMail, and your approvals, in order, never rewritten.</p>
       </header>
