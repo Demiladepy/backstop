@@ -5,6 +5,7 @@ import type { FormEvent } from 'react'
 import { api } from '../convex/_generated/api'
 import type { Doc, Id } from '../convex/_generated/dataModel'
 import './App.css'
+import './awesomic.css'
 import { AuthGate } from './AuthGate'
 import { BrandMark } from './BrandMark'
 
