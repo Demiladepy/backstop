@@ -1,6 +1,8 @@
 # 40s social cut — Backstop
 
-Post to X / LinkedIn after the voiced remux. Tag: **@Convex_dev** · **@OpenAI** · **@firecrawl_dev** · **@AgentMail_to** (adjust handles to what you use).
+Post to X / LinkedIn after the voiced remux. Tag exactly as the rules list them: **@convex** · **@OpenAI** · **@firecrawl** · **@agentmail**
+(x.com/Convex, x.com/openai, x.com/firecrawl, x.com/agentmail). Social proof is a
+scored criterion — a wrong handle spends the post without earning it.
 
 ## On-screen beat (~40s)
 
