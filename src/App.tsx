@@ -262,7 +262,7 @@ function Workspace() {
           Backstop
         </button>
         <p className="positioning-line">
-          Drafts and sends the appeals you approve — not legal or medical advice.
+          Drafts and sends the appeals you approve. Not legal or medical advice.
         </p>
         <nav className="header-actions" aria-label="Account">
           {approvals && approvals.length > 0 && (

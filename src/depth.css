@@ -58,28 +58,7 @@
 }
 
 .aw-hero::before {
-  content: '';
-  position: absolute;
-  inset: -12% -8% auto;
-  height: min(520px, 70vw);
-  z-index: 0;
-  pointer-events: none;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.95), transparent 55%),
-    var(--depth-moss);
-  background-size: cover;
-  background-position: center 35%;
-  filter: grayscale(0.35) saturate(0.75) brightness(1.08);
-  opacity: 0.22;
-  mask-image: radial-gradient(ellipse 70% 65% at 50% 40%, #000 10%, transparent 72%);
-  -webkit-mask-image: radial-gradient(ellipse 70% 65% at 50% 40%, #000 10%, transparent 72%);
-}
-
-.aw-hero-copy,
-.aw-peek {
-  position: relative;
-  z-index: 1;
+  content: none;
 }
 
 .aw-peek-card,

@@ -43,6 +43,29 @@ const STACK = [
   { name: 'AgentMail', role: 'Human-gated send' },
 ] as const
 
+const FAQS = [
+  {
+    q: 'What is Backstop?',
+    a: 'Backstop helps you turn a medical insurance denial into a cited appeal you control. It drafts from stored evidence and only sends after you approve.',
+  },
+  {
+    q: 'How does Backstop work?',
+    a: 'Open a sample denial packet. Firecrawl parses and researches public policy. OpenAI drafts a cited appeal. You review, then approve. AgentMail sends only after that gate.',
+  },
+  {
+    q: 'Will Backstop send email without my approval?',
+    a: 'No. Approve is the only send gate. Follow-ups and form fills also wait for your explicit approval.',
+  },
+  {
+    q: 'Is this HIPAA compliant?',
+    a: 'No. This is a public hackathon demo. Use only fictional or fully de-identified sample documents. Never enter real health information.',
+  },
+  {
+    q: 'What stack powers the demo?',
+    a: 'Convex for the reactive backend, Firecrawl for parse and policy research, OpenAI for grounded drafting, and AgentMail for human-gated email.',
+  },
+] as const
+
 export function AuthGate({ children }: { children: ReactNode }) {
   const { signIn } = useAuthActions()
   const [signingIn, setSigningIn] = useState(false)
@@ -50,6 +73,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [activeGate, setActiveGate] = useState('review')
   const [gatePinned, setGatePinned] = useState(false)
+  const [openFaq, setOpenFaq] = useState<number | null>(0)
 
   useEffect(() => {
     if (!menuOpen) return
@@ -108,6 +132,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
               <nav className="aw-nav-links" aria-label="Landing">
                 <a href="#how-it-works">How it works</a>
                 <a href="#human-gate">Human gate</a>
+                <a href="#faq">FAQ</a>
                 <a href="#demo-safety">Safety</a>
                 <a href="#sponsors">Stack</a>
               </nav>
@@ -130,6 +155,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
                       <a href="#human-gate" role="menuitem" onClick={() => setMenuOpen(false)}>
                         Human gate
                       </a>
+                      <a href="#faq" role="menuitem" onClick={() => setMenuOpen(false)}>
+                        FAQ
+                      </a>
                       <a href="#demo-safety" role="menuitem" onClick={() => setMenuOpen(false)}>
                         Safety
                       </a>
@@ -151,45 +179,56 @@ export function AuthGate({ children }: { children: ReactNode }) {
             </div>
           </header>
 
-          <section className="aw-hero" aria-labelledby="auth-title">
-            <div className="aw-hero-copy">
-              <span className="aw-ember-badge">All Gas demo</span>
-              <h1 className="aw-display">BACKSTOP</h1>
-              <h2 id="auth-title">From a medical denial to an appeal you control.</h2>
-              <p className="aw-lede">
-                Drafts and sends the appeals you approve — not legal or medical advice.
-              </p>
-              <div className="aw-hero-actions">
-                <button
-                  className="aw-cta"
-                  type="button"
-                  disabled={signingIn}
-                  onClick={() => void enterDemo()}
-                >
-                  {signingIn ? 'Opening private demo…' : 'Enter private demo'}
-                  {!signingIn && <span aria-hidden="true">→</span>}
-                </button>
-                <a className="aw-ghost" href="#how-it-works">
-                  See how it works
-                </a>
-              </div>
-              {error && (
-                <p className="form-error" role="alert">
-                  {error}
-                </p>
-              )}
+          <section className="aw-hero aw-hero-mercury" aria-labelledby="auth-title">
+            <div className="aw-hero-mercury-media" aria-hidden="true">
+              <img
+                src="/images/alpine.jpg"
+                alt=""
+                width={2000}
+                height={1200}
+                decoding="async"
+              />
             </div>
-
-            <div className="aw-peek" aria-hidden="true">
-              {PEEK.map((card) => (
-                <article className="aw-peek-card" key={card.title}>
-                  <span>{card.tag}</span>
-                  <strong>{card.title}</strong>
-                  <em>{card.note}</em>
-                </article>
-              ))}
+            <div className="aw-hero-mercury-overlay" aria-hidden="true" />
+            <div className="aw-hero-mercury-inner">
+              <div className="aw-hero-copy">
+                <span className="aw-mercury-badge">All Gas demo</span>
+                <h1 className="aw-display">Backstop</h1>
+                <h2 id="auth-title">From a medical denial to an appeal you control.</h2>
+                <p className="aw-lede">
+                  Drafts and sends the appeals you approve. Not legal or medical advice.
+                </p>
+                <div className="aw-hero-actions">
+                  <button
+                    className="aw-cta aw-cta-cobalt"
+                    type="button"
+                    disabled={signingIn}
+                    onClick={() => void enterDemo()}
+                  >
+                    {signingIn ? 'Opening private demo…' : 'Enter private demo'}
+                  </button>
+                  <a className="aw-ghost aw-ghost-ivory" href="#how-it-works">
+                    See how it works
+                  </a>
+                </div>
+                {error && (
+                  <p className="form-error" role="alert">
+                    {error}
+                  </p>
+                )}
+              </div>
             </div>
           </section>
+
+          <div className="aw-peek aw-peek-bridge" aria-hidden="true">
+            {PEEK.map((card) => (
+              <article className="aw-peek-card" key={card.title}>
+                <span>{card.tag}</span>
+                <strong>{card.title}</strong>
+                <em>{card.note}</em>
+              </article>
+            ))}
+          </div>
 
           <section className="aw-section" id="how-it-works" aria-labelledby="how-title">
             <div className="aw-section-head">
@@ -250,6 +289,53 @@ export function AuthGate({ children }: { children: ReactNode }) {
                         <em>{row.status}</em>
                       )}
                     </button>
+                  )
+                })}
+              </div>
+            </div>
+          </section>
+
+          <section className="aw-section aw-faq" id="faq" aria-labelledby="faq-title">
+            <div className="aw-faq-layout">
+              <div className="aw-faq-intro">
+                <h2 id="faq-title">FAQ</h2>
+                <p>Common questions about the private demo.</p>
+                <div className="aw-faq-tools" aria-hidden="true">
+                  <span>CV</span>
+                  <span>FC</span>
+                  <span>AI</span>
+                  <span>AM</span>
+                </div>
+              </div>
+              <div className="aw-faq-list">
+                {FAQS.map((item, index) => {
+                  const isOpen = openFaq === index
+                  return (
+                    <div
+                      key={item.q}
+                      className={`aw-faq-item${isOpen ? ' is-open' : ''}`}
+                    >
+                      <button
+                        type="button"
+                        className="aw-faq-trigger"
+                        aria-expanded={isOpen}
+                        aria-controls={`faq-panel-${index}`}
+                        id={`faq-trigger-${index}`}
+                        onClick={() => setOpenFaq(isOpen ? null : index)}
+                      >
+                        <span>{item.q}</span>
+                        <i aria-hidden="true">{isOpen ? '▴' : '▾'}</i>
+                      </button>
+                      <div
+                        className="aw-faq-panel"
+                        id={`faq-panel-${index}`}
+                        role="region"
+                        aria-labelledby={`faq-trigger-${index}`}
+                        hidden={!isOpen}
+                      >
+                        <p>{item.a}</p>
+                      </div>
+                    </div>
                   )
                 })}
               </div>
@@ -345,7 +431,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
                 <h3>Get in touch</h3>
                 <p className="aw-footer-meta">
                   <span aria-hidden="true">◎</span>
-                  Convex All Gas hackathon demo — not a clinic or insurer portal.
+                  Convex All Gas hackathon demo. Not a clinic or insurer portal.
                 </p>
                 <div className="aw-footer-contacts">
                   <a href="https://github.com/Demiladepy/backstop" target="_blank" rel="noreferrer">
@@ -388,6 +474,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
                 <ul>
                   <li><a href="#how-it-works">How it works</a></li>
                   <li><a href="#human-gate">Human gate</a></li>
+                  <li><a href="#faq">FAQ</a></li>
                   <li><a href="#sponsors">All Gas stack</a></li>
                   <li>
                     <button type="button" onClick={() => void enterDemo()}>
