@@ -304,10 +304,13 @@ function Workspace() {
         )}
       </main>
 
-      <footer className="product-footer">
-        <div>
+      <footer className="product-footer product-footer-depth">
+        <div className="product-footer-brand">
           <Mark name="B" />
-          <strong>Backstop</strong>
+          <div>
+            <strong>backstop*</strong>
+            <span>Medical-denial advocacy</span>
+          </div>
         </div>
         <p>
           Demo only. Not HIPAA compliant. Use fake or sample documents only.

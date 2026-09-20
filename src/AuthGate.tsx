@@ -324,26 +324,149 @@ export function AuthGate({ children }: { children: ReactNode }) {
             </button>
           </section>
 
-          <footer className="aw-footer">
-            <p>
-              Demo only. Not HIPAA compliant.
-              {' '}
-              <a href="https://festive-roadrunner-713.convex.site" target="_blank" rel="noreferrer">
-                Live app
+          <footer className="aw-site-footer">
+            <div className="aw-mega-bar">
+              <p className="aw-mega-guide">
+                <span aria-hidden="true">✦</span>
+                Human approval is the backstop
+              </p>
+              <a className="aw-mega-chip" href="#demo-safety">
+                Demo only
+                <em>safe</em>
               </a>
-              {' · '}
-              <a href="https://github.com/Demiladepy/backstop" target="_blank" rel="noreferrer">
-                GitHub
-              </a>
-              {' · '}
-              <a
-                href="https://github.com/Demiladepy/backstop/blob/master/DEMO.md"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Demo script
-              </a>
+            </div>
+
+            <p className="aw-mega-word" aria-label="Backstop">
+              backstop*
             </p>
+
+            <div className="aw-footer-grid">
+              <div className="aw-footer-card">
+                <h3>Get in touch</h3>
+                <p className="aw-footer-meta">
+                  <span aria-hidden="true">◎</span>
+                  Convex All Gas hackathon demo — not a clinic or insurer portal.
+                </p>
+                <div className="aw-footer-contacts">
+                  <a href="https://github.com/Demiladepy/backstop" target="_blank" rel="noreferrer">
+                    <span aria-hidden="true">⌘</span>
+                    github.com/Demiladepy/backstop
+                  </a>
+                  <a href="https://festive-roadrunner-713.convex.site" target="_blank" rel="noreferrer">
+                    <span aria-hidden="true">↗</span>
+                    festive-roadrunner-713.convex.site
+                  </a>
+                </div>
+                <div className="aw-footer-social" aria-label="Project links">
+                  <a
+                    href="https://github.com/Demiladepy/backstop"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="GitHub"
+                  >
+                    GH
+                  </a>
+                  <a
+                    href="https://github.com/Demiladepy/backstop/blob/master/DEMO.md"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Demo script"
+                  >
+                    DM
+                  </a>
+                  <a href="#sponsors" aria-label="Stack sponsors">
+                    ST
+                  </a>
+                  <a href="#how-it-works" aria-label="How it works">
+                    HW
+                  </a>
+                </div>
+              </div>
+
+              <div className="aw-footer-col">
+                <h4>Product</h4>
+                <ul>
+                  <li><a href="#how-it-works">How it works</a></li>
+                  <li><a href="#human-gate">Human gate</a></li>
+                  <li><a href="#sponsors">All Gas stack</a></li>
+                  <li>
+                    <button type="button" onClick={() => void enterDemo()}>
+                      Enter private demo
+                    </button>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="aw-footer-col">
+                <h4>Demo</h4>
+                <ul>
+                  <li>
+                    <a
+                      href="https://festive-roadrunner-713.convex.site"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Live app
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="https://github.com/Demiladepy/backstop/blob/master/DEMO.md"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Demo script
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="https://github.com/Demiladepy/backstop/releases/tag/demo-video"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Demo video
+                    </a>
+                  </li>
+                  <li><a href="#demo-safety">Demo safety</a></li>
+                </ul>
+              </div>
+
+              <div className="aw-footer-col">
+                <h4>Stack</h4>
+                <ul>
+                  <li>
+                    <a href="https://www.convex.dev/" target="_blank" rel="noreferrer">
+                      Convex
+                    </a>
+                  </li>
+                  <li>
+                    <a href="https://www.firecrawl.dev/" target="_blank" rel="noreferrer">
+                      Firecrawl
+                    </a>
+                  </li>
+                  <li>
+                    <a href="https://openai.com/" target="_blank" rel="noreferrer">
+                      OpenAI
+                    </a>
+                  </li>
+                  <li>
+                    <a href="https://www.agentmail.to/" target="_blank" rel="noreferrer">
+                      AgentMail
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="aw-footer-bottom">
+              <p>
+                <BrandMark size={22} />
+                <span>
+                  Demo only. Not HIPAA compliant. Never enter real health information or credentials.
+                </span>
+              </p>
+              <p className="aw-footer-copy">Backstop · medical-denial advocacy</p>
+            </div>
           </footer>
         </main>
       </Unauthenticated>

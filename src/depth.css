@@ -236,7 +236,68 @@
 
 .product-shell-depth .product-footer {
   backdrop-filter: blur(10px);
-  background: rgba(244, 244, 245, 0.9);
+  background: rgba(244, 244, 245, 0.92);
+}
+
+.product-footer-depth {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.9fr) minmax(0, 1.4fr) auto;
+  gap: 16px 24px;
+  align-items: center;
+  padding: 20px var(--page-gutter) 28px;
+  border-top: 1px solid var(--color-cloud);
+}
+
+.product-footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.product-footer-brand strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: lowercase;
+  background-image: url('/images/moss.jpg');
+  background-size: cover;
+  background-position: center;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.product-footer-brand span {
+  display: block;
+  font-size: 12px;
+  color: var(--color-fog);
+  font-weight: 400;
+  -webkit-text-fill-color: var(--color-fog);
+}
+
+.product-footer-depth > p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--color-fog);
+}
+
+.product-footer-depth > span {
+  justify-self: end;
+  font-size: 13px;
+  color: var(--color-steel);
+}
+
+@media (max-width: 820px) {
+  .product-footer-depth {
+    grid-template-columns: 1fr;
+  }
+
+  .product-footer-depth > span {
+    justify-self: start;
+  }
 }
 
 /* —— Board —— */
