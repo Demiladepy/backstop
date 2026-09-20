@@ -19,6 +19,7 @@ import {
   buildPolicySearchQueries,
   curatedCandidatesForDenial,
   findExactQuoteInContent,
+  looksLikeErrorPage,
   pickFallbackExcerpt,
   scorePolicyUrl,
 } from "./researchHelpers";
@@ -43,6 +44,14 @@ type PolicyCandidate = {
   score: number;
 };
 
+/**
+ * "quoted" means the excerpt was matched verbatim inside the scraped page.
+ * "unverified" means exact-quote extraction failed and we fell back to a
+ * contiguous slice — still from the page, but not a clause the model chose,
+ * so it must never silently support a factual claim in the appeal.
+ */
+type SourceVerification = "quoted" | "unverified";
+
 type BuiltPolicySource = {
   title: string;
   url: string;
@@ -51,6 +60,7 @@ type BuiltPolicySource = {
   excerpt: string;
   quotedText: string;
   relevanceNote: string;
+  verification: SourceVerification;
 };
 
 async function extractPolicyClause(content: string, denialExcerpt: string) {
@@ -88,6 +98,7 @@ async function extractPolicyClause(content: string, denialExcerpt: string) {
       return {
         quotedText: matched,
         relevanceNote: row.relevanceNote.trim(),
+        verification: "quoted" as SourceVerification,
       };
     }
   } catch {
@@ -101,7 +112,8 @@ async function extractPolicyClause(content: string, denialExcerpt: string) {
   return {
     quotedText: fallback,
     relevanceNote:
-      "Selected contiguous excerpt from the retrieved public policy page after exact-quote extraction failed. Verify before relying on it.",
+      "Exact-quote extraction failed. This is a contiguous excerpt from the retrieved page, not a clause selected as relevant — paragraphs relying on it are marked unverified.",
+    verification: "unverified" as SourceVerification,
   };
 }
 
@@ -261,6 +273,11 @@ async function buildSourceFromCandidate(
         publisher: new URL(candidate.url).hostname,
       }
     : await scrapePolicy(ctx, candidate.url);
+  if (looksLikeErrorPage(scraped.markdown, scraped.title)) {
+    throw new Error(
+      `Rejected ${candidate.url}: scrape returned an error or interstitial page, not policy text`,
+    );
+  }
   const clause = await extractPolicyClause(scraped.markdown, denialExcerpt);
   if (!scraped.markdown.includes(clause.quotedText)) {
     throw new Error(`Quote missing from scraped content for ${candidate.url}`);
@@ -273,6 +290,7 @@ async function buildSourceFromCandidate(
     excerpt: clause.quotedText.slice(0, 1_500),
     quotedText: clause.quotedText,
     relevanceNote: clause.relevanceNote,
+    verification: clause.verification,
   };
 }
 
@@ -325,20 +343,32 @@ async function runResearch(
       documentExcerpt,
     });
 
-    const sources: BuiltPolicySource[] = [];
+    // Prefer sources with a verbatim quote. A fallback excerpt is held in
+    // reserve and only used to fill the target, so the appeal quotes real
+    // policy language whenever any candidate can supply it.
+    const quoted: BuiltPolicySource[] = [];
+    const reserve: BuiltPolicySource[] = [];
     const errors: string[] = [];
     for (const candidate of candidates) {
-      if (sources.length >= TARGET_POLICY_SOURCES) {
+      if (quoted.length >= TARGET_POLICY_SOURCES) {
         break;
       }
       try {
-        sources.push(
-          await buildSourceFromCandidate(ctx, candidate, documentExcerpt),
+        const built = await buildSourceFromCandidate(
+          ctx,
+          candidate,
+          documentExcerpt,
         );
+        if (built.verification === "quoted") {
+          quoted.push(built);
+        } else {
+          reserve.push(built);
+        }
       } catch (error) {
         errors.push(`${candidate.url}: ${safeExternalError(error)}`);
       }
     }
+    const sources = [...quoted, ...reserve].slice(0, TARGET_POLICY_SOURCES);
 
     if (sources.length === 0) {
       throw new Error(

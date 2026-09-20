@@ -4482,3 +4482,15 @@ dd {
     grid-template-columns: 1fr;
   }
 }
+
+.policy-proof-unverified {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--cloud, #ececee);
+  border-left: 3px solid var(--ember, #ff5a00);
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--graphite, #18181b);
+  background: var(--snow, #ffffff);
+}

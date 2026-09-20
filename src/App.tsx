@@ -1375,6 +1375,13 @@ function AppealView({
               <blockquote>
                 “{activeSource.quotedText ?? activeSource.excerpt}”
               </blockquote>
+              {activeSource.verification === 'unverified' && (
+                <p className="policy-proof-unverified" role="note">
+                  Not a verbatim clause match. Backstop pulled this excerpt from
+                  the page but could not confirm it as the relevant policy
+                  language, so no claim rests on it.
+                </p>
+              )}
               {activeSource.retrievedAt && (
                 <p className="field-help">
                   Retrieved {formatDate(activeSource.retrievedAt)}
@@ -1520,6 +1527,9 @@ function AppealView({
               <b>[{sourceNumbers.get(source._id) ?? '?'}]</b>
               <p>
                 <strong>{source.title}</strong>
+                {source.verification === 'unverified' && (
+                  <span className="unverified-tag">Excerpt not confirmed</span>
+                )}
                 {source.excerpt.slice(0, 170)}
                 {source.excerpt.length > 170 ? '…' : ''}
                 <span className="citation-actions">

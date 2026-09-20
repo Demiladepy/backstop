@@ -71,8 +71,7 @@ action is audited.
 
 - Local: `npm run lint`, `npm run build`, `npm test`, `npm run test:e2e`
 - Sponsor keys on both dev and prod Convex deployments
-- Live app (canonical): https://festive-roadrunner-713.convex.site
-- Optional Vercel mirror: https://backstop-xi.vercel.app
+- Live app: https://festive-roadrunner-713.convex.site (Convex static hosting)
 - Public repository: https://github.com/Demiladepy/backstop
 
 ### Day 1 — Harden hero + real AgentMail
@@ -125,10 +124,45 @@ action is audited.
 - Added `SUBMISSION.md` paste sheet for vibeapps; DEMO.md warns fillers ≠ hero path.
 - Re-smoke: lint, build, unit tests, live Vercel hero path.
 
+### Day 7 — Grounding integrity + single host
+
+- **Fixed the defect that undercut the core claim.** Every URL in the curated
+  policy list had rotted (3x 404, 1x 403). Firecrawl returns a soft 404 with a
+  200-shaped result, so the Medicare "Page Not Found" body scraped cleanly,
+  passed the verbatim-containment check against itself, and became a *cited*
+  policy source. The live appeal quoted an error page, and **Open original**
+  sent the reader to a 404.
+- Replaced the curated list with URLs verified live, and documented that they
+  must be re-verified before any demo.
+- Added `looksLikeErrorPage` — error, block, and interstitial pages are
+  rejected before a scrape can become a source. Regression test pins the exact
+  Medicare 404 body that shipped.
+- Sources now carry `verification: "quoted" | "unverified"`. An excerpt that
+  could not be matched as a verbatim clause is kept as visible evidence but is
+  **not citable**: `draftAppeal` refuses to rest a paragraph on it, so the
+  paragraph is labelled `[UNVERIFIED]` instead of silently asserted. Research
+  prefers verbatim-quote candidates and only falls back to fill the target.
+- The appeal and citation register show the unconfirmed state in the UI, so the
+  failure mode is visible to the reader rather than only in the data.
+- **Fixed a second, quieter grounding failure.** `beginDraft` allowed a manual
+  "Draft grounded appeal" click while research was still in flight; it flipped
+  the case to `drafting`, and `completeResearch` then discarded the finished
+  scrape as "late research". The appeal came out with zero policy citations.
+  `beginDraft` now waits for research (it chains into drafting anyway), and
+  `completeResearch` uses the same past-research test as `failResearch`, so a
+  successful scrape is no longer thrown away in a case where a failed one
+  would have proceeded.
+- Live smoke now asserts the grounding beat itself: a cited **insurer policy
+  clause**, a working `https` original link, and no error-page text in the
+  proof pane. It passes against convex.site — this box had never been checked.
+- **One host.** The rules require Convex static hosting; the Vercel mirror was
+  serving a five-day-old build with a different landing page. Removed it from
+  every judge-facing doc. `e2e/live-vercel.*` renamed to `e2e/live-smoke.*`
+  (it already targeted convex.site).
+
 ## Submission links
 
 - Live app: https://festive-roadrunner-713.convex.site
-- Optional mirror: https://backstop-xi.vercel.app
 - Public repository: https://github.com/Demiladepy/backstop
 - Demo video: https://github.com/Demiladepy/backstop/releases/download/demo-video/backstop-hero-demo.webm
 - Demo release page: https://github.com/Demiladepy/backstop/releases/tag/demo-video

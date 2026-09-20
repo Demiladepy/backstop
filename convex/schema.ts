@@ -38,6 +38,11 @@ export const draftStatus = v.union(
   v.literal("sent"),
 );
 
+export const sourceVerification = v.union(
+  v.literal("quoted"),
+  v.literal("unverified"),
+);
+
 export const draftParagraph = v.object({
   text: v.string(),
   sourceIds: v.array(v.id("sources")),
@@ -101,6 +106,9 @@ export default defineSchema({
     excerpt: v.string(),
     quotedText: v.optional(v.string()),
     relevanceNote: v.optional(v.string()),
+    // Absent on document sources (the owner's own files are verbatim by
+    // definition) and on policy rows written before verification existed.
+    verification: v.optional(sourceVerification),
     retrievedAt: v.number(),
   })
     .index("by_caseId", ["caseId"])

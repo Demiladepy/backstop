@@ -6,7 +6,6 @@ control to an autonomous agent.
 > Drafts and sends the appeals you approve — not legal or medical advice.
 
 **Live app:** [festive-roadrunner-713.convex.site](https://festive-roadrunner-713.convex.site)  
-**Optional mirror:** [backstop-xi.vercel.app](https://backstop-xi.vercel.app)  
 **Repo:** [github.com/Demiladepy/backstop](https://github.com/Demiladepy/backstop)  
 **Demo script:** [DEMO.md](DEMO.md)  
 **Silent demo video:** [release asset](https://github.com/Demiladepy/backstop/releases/download/demo-video/backstop-hero-demo.webm)
@@ -36,7 +35,7 @@ npm run lint
 npm test
 npm run build
 npx playwright test
-npx playwright test --config=e2e/live-vercel.config.ts
+npx playwright test --config=e2e/live-smoke.config.ts
 npm run demo:record
 ```
 

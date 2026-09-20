@@ -1,7 +1,6 @@
 # Demo script (under 3 minutes)
 
-**Live app (canonical):** https://festive-roadrunner-713.convex.site  
-Optional Vercel mirror: https://backstop-xi.vercel.app  
+**Live app:** https://festive-roadrunner-713.convex.site  
 Public repo: https://github.com/Demiladepy/backstop
 
 Silent cut (current release — replace with voiced remux before submit):  

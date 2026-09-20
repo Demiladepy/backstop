@@ -5,7 +5,7 @@ const LIVE =
 
 export default defineConfig({
   testDir: ".",
-  testMatch: "live-vercel.spec.ts",
+  testMatch: "live-smoke.spec.ts",
   fullyParallel: false,
   retries: 0,
   reporter: "line",

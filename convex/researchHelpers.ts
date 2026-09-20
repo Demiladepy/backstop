@@ -17,25 +17,84 @@ const TRUSTED_HOST_SUFFIXES = [
   "kaiserpermanente.org",
 ] as const;
 
-/** Stable public pages used when live search is thin or scrape-heavy. */
-export const CURATED_POLICY_URLS = [
+/**
+ * Stable public pages used when live search is thin or scrape-heavy.
+ * Every URL here must return 200 for a plain GET; a rotted URL silently
+ * becomes a "policy source" that is really an error page, so re-verify
+ * this list before any demo or release.
+ */
+export type CuratedPolicyUrl = {
+  readonly url: string;
+  readonly title: string;
+  /** Only offered when the denial concerns imaging. */
+  readonly imaging?: boolean;
+};
+
+export const CURATED_POLICY_URLS: readonly CuratedPolicyUrl[] = [
   {
-    url: "https://www.medicare.gov/coverage/magnetic-resonance-imaging-mri",
-    title: "Medicare coverage: Magnetic Resonance Imaging (MRI)",
+    url: "https://www.medicare.gov/coverage/diagnostic-tests",
+    title: "Medicare coverage: Diagnostic tests and imaging",
+    imaging: true,
   },
   {
-    url: "https://www.medicare.gov/claims-appeals/file-an-appeal",
-    title: "Medicare: File an appeal",
+    url: "https://www.cms.gov/medicare/coverage/determination-process",
+    title: "CMS: Medicare coverage determination process",
+    imaging: true,
   },
   {
-    url: "https://www.cms.gov/medicare/appeals-and-grievances/orgmedprocsappeals",
-    title: "CMS: Original Medicare appeals",
+    url: "https://www.medicare.gov/claims-appeals/how-do-i-file-an-appeal",
+    title: "Medicare: How do I file an appeal?",
   },
   {
-    url: "https://www.aetna.com/cpb/medical/data/1_99/0095.html",
-    title: "Aetna Clinical Policy Bulletin: Magnetic Resonance Imaging",
+    url: "https://www.healthcare.gov/appeal-insurance-company-decision/internal-appeals/",
+    title: "HealthCare.gov: Internal appeals",
   },
-] as const;
+  {
+    url: "https://www.healthcare.gov/appeal-insurance-company-decision/external-review/",
+    title: "HealthCare.gov: External review",
+  },
+];
+
+/**
+ * Markers that a scraped page is an error, block, or interstitial rather than
+ * policy text. Firecrawl returns soft 404s with a 200-shaped result, so a
+ * scrape that "succeeds" can still carry a Not Found body. Without this check
+ * that body becomes a citable source and the appeal quotes an error page.
+ */
+const ERROR_PAGE_PATTERNS: readonly RegExp[] = [
+  /page not found/i,
+  /page (?:could|can) ?not be found/i,
+  /page you (?:are|were) looking for/i,
+  /page that matches your entry/i,
+  /\berror 40[34]\b/i,
+  /\bhttp 40[34]\b/i,
+  /\b40[34] (?:error|not found|forbidden)\b/i,
+  /access denied/i,
+  /\bforbidden\b/i,
+  /request blocked/i,
+  /temporarily unavailable/i,
+  /service unavailable/i,
+  /enable javascript/i,
+  /are you a (?:human|robot)/i,
+  /verify you are human/i,
+];
+
+/** Below this, a "policy page" is too thin to have quotable policy language. */
+export const MIN_POLICY_CONTENT_CHARS = 600;
+
+/**
+ * Error pages announce themselves in the title and opening lines, so only the
+ * head of the document is scanned. Matching the whole body would reject real
+ * policy pages that happen to mention "not found" further down.
+ */
+export function looksLikeErrorPage(content: string, title?: string): boolean {
+  const collapsed = content.replace(/\s+/g, " ").trim();
+  if (collapsed.length < MIN_POLICY_CONTENT_CHARS) {
+    return true;
+  }
+  const head = `${title ?? ""} ${collapsed.slice(0, 1_200)}`;
+  return ERROR_PAGE_PATTERNS.some((pattern) => pattern.test(head));
+}
 
 export function normalizeForQuoteMatch(text: string) {
   return text.replace(/\s+/g, " ").trim().toLowerCase();
@@ -187,8 +246,5 @@ export function scorePolicyUrl(url: string, payer: string): number {
 export function curatedCandidatesForDenial(documentExcerpt: string) {
   const signals = extractDenialSignals(documentExcerpt);
   const wantsImaging = signals.some((s) => /mri|spine|imaging/i.test(s));
-  return CURATED_POLICY_URLS.filter((row) => {
-    if (wantsImaging) return true;
-    return !/mri|magnetic-resonance/i.test(row.url);
-  });
+  return CURATED_POLICY_URLS.filter((row) => wantsImaging || !row.imaging);
 }

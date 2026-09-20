@@ -1,7 +1,7 @@
 /**
  * Live smoke against the canonical Convex static host.
  * Override with LIVE_URL if needed.
- * Run: npx playwright test --config=e2e/live-vercel.config.ts
+ * Run: npx playwright test --config=e2e/live-smoke.config.ts
  */
 import { expect, test } from "@playwright/test";
 
@@ -100,38 +100,64 @@ test("hero: sample case through grounding cite and approve", async ({
   const approveBtn = page.getByRole("button", {
     name: /Approve and send appeal/i,
   });
-  const draftBtn = page.getByRole("button", {
-    name: /Draft grounded appeal/i,
-  });
-
+  // Parse -> research -> draft chains on its own. Clicking "Draft grounded
+  // appeal" while research is in flight used to flip the case out of
+  // "researching" and strand the policy sources, so the hero path must wait
+  // for the chain rather than race it.
   await expect
     .poll(
       async () => {
         if (await approveBtn.isVisible().catch(() => false)) return "ready";
-        if (await draftBtn.isVisible().catch(() => false)) {
-          const disabled = await draftBtn.isDisabled().catch(() => true);
-          if (!disabled) {
-            await draftBtn.click();
-            return "drafting";
-          }
-        }
-        await page.getByRole("button", { name: /Appeal/ }).click();
+        await page
+          .getByRole("button", { name: /Appeal/ })
+          .click()
+          .catch(() => {});
         return "wait";
       },
       { timeout: 180_000, intervals: [4_000, 6_000, 8_000] },
     )
-    .toMatch(/ready|drafting/);
+    .toBe("ready");
 
   await expect(approveBtn).toBeVisible({ timeout: 120_000 });
   await expect(approveBtn).toBeEnabled();
 
-  const citeChip = page.locator(".cite-chip, button.cite").first();
-  if (await citeChip.isVisible().catch(() => false)) {
-    await citeChip.click();
-    await expect(
-      page.getByRole("button", { name: /Open original/i }),
-    ).toBeVisible({ timeout: 20_000 });
+  // The grounding beat: a citation must open a real policy clause with a
+  // working link. Document citations have no URL, so walk the chips until the
+  // proof pane shows an insurer policy clause. "Open original" is an anchor.
+  const proof = page.locator(".policy-proof");
+  const chips = page.locator(".cite-chip, button.cite");
+  await expect(chips.first()).toBeVisible({ timeout: 30_000 });
+  const kindLabel = proof.locator(".policy-proof-kind");
+  const chipCount = await chips.count();
+  let policyShown = false;
+  for (let i = 0; i < chipCount; i += 1) {
+    await chips.nth(i).click();
+    // The proof pane re-renders on click; read it only once it has settled,
+    // otherwise a document chip can be misread as "no policy clause".
+    const kind = await expect
+      .poll(async () => await kindLabel.innerText().catch(() => ""), {
+        timeout: 10_000,
+        intervals: [250, 500, 1_000],
+      })
+      .not.toBe("")
+      .then(async () => await kindLabel.innerText())
+      .catch(() => "");
+    if (/policy clause/i.test(kind)) {
+      policyShown = true;
+      break;
+    }
   }
+  expect(policyShown, "no cited insurer policy clause in the draft").toBe(true);
+
+  await expect(proof.locator("blockquote")).not.toBeEmpty();
+  const openOriginal = proof.getByRole("link", { name: /Open original/i });
+  await expect(openOriginal).toBeVisible({ timeout: 20_000 });
+  expect(await openOriginal.getAttribute("href")).toMatch(/^https:\/\//);
+  // A cited policy page must not be an error page; that shipped once.
+  const proofText = (await proof.innerText()).toLowerCase();
+  expect(proofText).not.toMatch(
+    /page not found|matches your entry|access denied/,
+  );
 
   await approveBtn.click();
 

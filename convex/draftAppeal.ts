@@ -111,10 +111,19 @@ async function runDraft(
   });
 
   try {
+    // A policy source whose excerpt could not be matched verbatim cannot
+    // support a factual claim. It stays visible on the case as evidence, but
+    // a paragraph resting on it is labelled unverified rather than cited.
+    const citableIds = new Set(
+      context.sources
+        .filter((source) => source.verification !== "unverified")
+        .map((source) => source._id),
+    );
     const sourceInput = context.sources.map((source) => ({
       id: source._id,
       title: source.title,
       url: source.url ?? null,
+      citable: citableIds.has(source._id),
       excerpt: source.content.slice(0, 8_000),
     }));
     const outputText = await createStructuredResponse(
@@ -122,7 +131,7 @@ async function runDraft(
         {
           role: "system",
           content:
-            "Draft a calm medical insurance appeal for human review. This is not legal or medical advice. Every factual paragraph must cite one or more exact source IDs supplied by the user. Never invent an ID. If a paragraph cannot be supported, return an empty sourceIds array; it will be visibly marked unverified. Do not claim the appeal has been sent.",
+            "Draft a calm medical insurance appeal for human review. This is not legal or medical advice. Every factual paragraph must cite one or more exact source IDs supplied by the user. Never invent an ID. Only cite sources marked citable:true; a citable:false source is unconfirmed page text and must not be used to support a claim. If a paragraph cannot be supported, return an empty sourceIds array; it will be visibly marked unverified. Do not claim the appeal has been sent.",
         },
         {
           role: "user",
@@ -139,10 +148,9 @@ async function runDraft(
       responseSchema,
     );
     const output = parseDraftOutput(outputText);
-    const sourceIds = new Set(context.sources.map((source) => source._id));
     const paragraphs = output.paragraphs.map((paragraph) => {
       const validIds = paragraph.sourceIds.filter(
-        (id): id is Id<"sources"> => sourceIds.has(id as Id<"sources">),
+        (id): id is Id<"sources"> => citableIds.has(id as Id<"sources">),
       );
       const allValid =
         validIds.length > 0 &&

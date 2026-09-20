@@ -569,13 +569,14 @@ describe("workflow auto-chain wiring", () => {
       ownerId: "test|owner",
       operationId: "firecrawl:policy:test",
       sources: [{
-        title: "Medicare MRI coverage",
-        url: "https://www.medicare.gov/coverage/magnetic-resonance-imaging-mri",
+        title: "Medicare diagnostic test coverage",
+        url: "https://www.medicare.gov/coverage/diagnostic-tests",
         publisher: "medicare.gov",
         content: "Medicare may cover MRI when medically necessary.",
         excerpt: "Medicare may cover MRI when medically necessary.",
         quotedText: "Medicare may cover MRI when medically necessary.",
         relevanceNote: "Public coverage criteria for advanced imaging.",
+        verification: "quoted",
       }],
     });
 
@@ -583,6 +584,57 @@ describe("workflow auto-chain wiring", () => {
     expect(sourceIds).toHaveLength(1);
     expect(detail?.case.status).toBe("drafting");
     expect(detail?.sources.some((source) => source.kind === "policy")).toBe(true);
+    expect(
+      detail?.sources.find((source) => source.kind === "policy")?.verification,
+    ).toBe("quoted");
+  });
+
+  test("completeResearch preserves an unverified excerpt label through to the case", async () => {
+    const t = convexTest(schema, modules);
+    const owner = t.withIdentity({ tokenIdentifier: "test|owner" });
+    const caseId = await owner.mutation(api.cases.createCase, {
+      title: "Unverified excerpt denial",
+      category: "medical_denial",
+    });
+    await t.run(async (ctx) => {
+      await ctx.db.insert("sources", {
+        caseId,
+        ownerId: "test|owner",
+        kind: "document",
+        title: "Sample denial letter",
+        content: "We denied the requested outpatient MRI.",
+        excerpt: "We denied the requested outpatient MRI.",
+        retrievedAt: Date.now(),
+      });
+      await ctx.db.patch("cases", caseId, { status: "researching" });
+    });
+    await t.mutation(internal.workflowModel.beginResearch, {
+      caseId,
+      ownerId: "test|owner",
+      operationId: "firecrawl:policy:unverified",
+    });
+    await t.mutation(internal.workflowModel.completeResearch, {
+      caseId,
+      ownerId: "test|owner",
+      operationId: "firecrawl:policy:unverified",
+      sources: [{
+        title: "HealthCare.gov internal appeals",
+        url: "https://www.healthcare.gov/appeal-insurance-company-decision/internal-appeals/",
+        publisher: "healthcare.gov",
+        content: "You have the right to appeal an insurance company decision.",
+        excerpt: "You have the right to appeal an insurance company decision.",
+        quotedText: "You have the right to appeal an insurance company decision.",
+        relevanceNote: "Exact-quote extraction failed; contiguous page excerpt.",
+        verification: "unverified",
+      }],
+    });
+
+    const detail = await owner.query(api.cases.getCase, { caseId });
+    const policy = detail?.sources.find((source) => source.kind === "policy");
+    // The row is kept as visible evidence, but carries the label the appeal
+    // uses to refuse to rest a factual claim on it.
+    expect(policy).toBeTruthy();
+    expect(policy?.verification).toBe("unverified");
   });
 
   test("failResearch records the failure and still schedules drafting from document sources", async () => {

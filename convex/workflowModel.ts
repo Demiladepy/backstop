@@ -2,7 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalMutation, internalQuery } from "./_generated/server";
-import schema, { draftParagraph } from "./schema";
+import schema, { draftParagraph, sourceVerification } from "./schema";
 
 const MAX_SOURCE_CONTENT = 500_000;
 const MAX_POLICY_SOURCES = 10;
@@ -16,6 +16,7 @@ const policySourceInput = v.object({
   excerpt: v.string(),
   quotedText: v.string(),
   relevanceNote: v.string(),
+  verification: sourceVerification,
 });
 
 function fail(message: string): never {
@@ -304,7 +305,23 @@ export const completeResearch = internalMutation({
     if (!caseRow || caseRow.ownerId !== args.ownerId) {
       fail("Case not found");
     }
-    if (caseRow.status !== "researching") {
+    const existingAppeal = await ctx.db
+      .query("drafts")
+      .withIndex("by_caseId", (q) => q.eq("caseId", args.caseId))
+      .filter((q) => q.eq(q.field("kind"), "appeal"))
+      .first();
+    // Mirror failResearch: only refuse once the owner has moved past research,
+    // not merely because the case slipped into "drafting". Discarding a
+    // successful scrape here is what leaves an appeal with no policy sources.
+    const pastResearch =
+      caseRow.status === "awaiting_approval" ||
+      caseRow.status === "approved" ||
+      caseRow.status === "sent" ||
+      caseRow.status === "awaiting_reply" ||
+      caseRow.status === "resolved" ||
+      caseRow.status === "closed" ||
+      (caseRow.status === "drafting" && existingAppeal !== null);
+    if (pastResearch) {
       const now = Date.now();
       await ctx.db.insert("auditLog", {
         caseId: args.caseId,
@@ -353,6 +370,7 @@ export const completeResearch = internalMutation({
           excerpt: source.excerpt.trim().slice(0, 1_500),
           quotedText: source.quotedText.trim().slice(0, 4_000),
           relevanceNote: source.relevanceNote.trim().slice(0, 1_000),
+          verification: source.verification,
           retrievedAt: now,
         }),
       );
@@ -481,6 +499,19 @@ export const beginDraft = internalMutation({
       caseRow.status !== "error"
     ) {
       fail(`Cannot draft an appeal from ${caseRow.status}`);
+    }
+    const priorAppeal = await ctx.db
+      .query("drafts")
+      .withIndex("by_caseId", (q) => q.eq("caseId", args.caseId))
+      .filter((q) => q.eq(q.field("kind"), "appeal"))
+      .first();
+    // Drafting now would flip the case out of "researching", and the policy
+    // sources would land too late to be cited. Research chains into drafting
+    // on its own (via completeResearch or failResearch), so wait for it.
+    if (caseRow.status === "researching" && !priorAppeal) {
+      fail(
+        "Policy research is still running. The appeal drafts automatically as soon as it finishes.",
+      );
     }
     const source = await ctx.db
       .query("sources")
