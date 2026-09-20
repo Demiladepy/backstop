@@ -160,6 +160,22 @@ action is audited.
   every judge-facing doc. `e2e/live-vercel.*` renamed to `e2e/live-smoke.*`
   (it already targeted convex.site).
 
+### Day 8 — Grounding made visible
+
+- **The denial highlight never rendered.** `denialHighlightSegments` picked the
+  reason sentence out of a whitespace-collapsed copy, then looked it up in the
+  original with `indexOf`. Every real letter wraps across lines, so the lookup
+  always missed and the pane fell back to unhighlighted text — including for
+  the blessed sample, whose pinned constant was also the collapsed form. Match
+  is now whitespace-tolerant and tiered (most specific reason phrase first,
+  with a length cap so a run-on header cannot win). The helper moved into
+  `convex/researchHelpers.ts` with unit tests, and live smoke asserts a visible
+  `.denial-hit`, so it cannot regress silently again.
+- Verified on an **uploaded** messy fax-style scan, not the blessed packet:
+  parse -> 2 verified policy URLs -> 3 cited claims -> highlighted reason line.
+- Strip inline `(sourceIds: [...])` the model occasionally wrote into prose;
+  raw document ids must never reach a payer.
+
 ## Submission links
 
 - Live app: https://festive-roadrunner-713.convex.site

@@ -127,6 +127,13 @@ test("hero: sample case through grounding cite and approve", async ({
   const proof = page.locator(".policy-proof");
   const chips = page.locator(".cite-chip, button.cite");
   await expect(chips.first()).toBeVisible({ timeout: 30_000 });
+  // The denial's reason line must be highlighted beside the draft. This used
+  // to fail silently: the sentence was found in a whitespace-collapsed copy
+  // and then looked up in the original, which wraps across lines.
+  const denialHit = page.locator(".denial-hit");
+  await expect(denialHit.first()).toBeVisible({ timeout: 20_000 });
+  expect((await denialHit.first().innerText()).length).toBeGreaterThan(30);
+
   const kindLabel = proof.locator(".policy-proof-kind");
   const chipCount = await chips.count();
   let policyShown = false;

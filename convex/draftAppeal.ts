@@ -39,6 +39,15 @@ const responseSchema = {
   additionalProperties: false,
 } satisfies Record<string, unknown>;
 
+/**
+ * The model is told to cite via the sourceIds field, but it has inlined
+ * "(sourceIds: [\"kn7...\"])" into the prose before. Raw document ids must
+ * never reach a payer, so strip them before the paragraph is stored.
+ */
+function stripInlineSourceIds(text: string): string {
+  return text.replace(/\s*\(\s*sourceIds\s*:[^)]*\)/gi, " ").replace(/ {2,}/g, " ").trim();
+}
+
 function parseDraftOutput(text: string): DraftOutput {
   const value: unknown = JSON.parse(text);
   if (typeof value !== "object" || value === null) {
@@ -64,7 +73,7 @@ function parseDraftOutput(text: string): DraftOutput {
       throw new Error("OpenAI returned an invalid paragraph citation");
     }
     return {
-      text: paragraph.text.trim(),
+      text: stripInlineSourceIds(paragraph.text),
       sourceIds: paragraph.sourceIds as string[],
     };
   });

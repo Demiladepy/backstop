@@ -3,6 +3,7 @@ import { useAction, useMutation, useQuery } from 'convex/react'
 import { useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { api } from '../convex/_generated/api'
+import { denialHighlightSegments } from '../convex/researchHelpers'
 import type { Doc, Id } from '../convex/_generated/dataModel'
 import './App.css'
 import './awesomic.css'
@@ -111,49 +112,6 @@ function sourceNumberMap(sources: Doc<'sources'>[]) {
 
 function displayParagraphText(text: string) {
   return text.replace(/^\[UNVERIFIED\]\s*/i, '').trim()
-}
-
-const DENIAL_REASON_RE =
-  /\b(denied|deny|denial|not covered|not medically necessary|medical-necessity|prior auth|adverse benefit)\b/i
-
-const SAMPLE_DENIAL_HIGHLIGHT =
-  'We denied the requested outpatient MRI because the information submitted did not show completion of six weeks of provider-directed conservative treatment.'
-
-/** Split excerpt into plain / highlighted segments for the grounding pane. */
-function denialHighlightSegments(excerpt: string): Array<{ text: string; hit: boolean }> {
-  const normalized = excerpt.replace(/\s+/g, ' ').trim()
-  if (!normalized) return [{ text: excerpt, hit: false }]
-
-  const pinned = normalized.includes(SAMPLE_DENIAL_HIGHLIGHT)
-    ? SAMPLE_DENIAL_HIGHLIGHT
-    : null
-
-  let hitText = pinned
-  if (!hitText) {
-    const sentences = normalized.split(/(?<=[.!?])\s+/)
-    hitText = sentences.find((sentence) => DENIAL_REASON_RE.test(sentence)) ?? null
-  }
-  if (!hitText) return [{ text: excerpt, hit: false }]
-
-  const index = excerpt.indexOf(hitText)
-  if (index < 0) {
-    const lower = excerpt.toLowerCase()
-    const needle = hitText.toLowerCase()
-    const soft = lower.indexOf(needle)
-    if (soft < 0) return [{ text: excerpt, hit: false }]
-    const actual = excerpt.slice(soft, soft + hitText.length)
-    return [
-      { text: excerpt.slice(0, soft), hit: false },
-      { text: actual, hit: true },
-      { text: excerpt.slice(soft + actual.length), hit: false },
-    ].filter((part) => part.text.length > 0)
-  }
-
-  return [
-    { text: excerpt.slice(0, index), hit: false },
-    { text: hitText, hit: true },
-    { text: excerpt.slice(index + hitText.length), hit: false },
-  ].filter((part) => part.text.length > 0)
 }
 
 function humanizeEvent(event: string) {

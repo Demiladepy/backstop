@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   buildPolicySearchQueries,
   CURATED_POLICY_URLS,
+  denialHighlightSegments,
   findExactQuoteInContent,
   looksLikeErrorPage,
   pickFallbackExcerpt,
@@ -81,6 +82,49 @@ describe("researchHelpers", () => {
     }
     expect(CURATED_POLICY_URLS.some((row) => row.imaging)).toBe(true);
     expect(CURATED_POLICY_URLS.some((row) => !row.imaging)).toBe(true);
+  });
+
+  test("highlights the reason line across a line-wrapped denial", () => {
+    // Real letters wrap. The old lookup searched the original text for a
+    // sentence taken from a whitespace-collapsed copy, so it never matched.
+    const letter = `Aetna - FICTIONAL DEMONSTRATION LETTER
+
+We denied the requested outpatient MRI because the information
+submitted did not show completion of six weeks of provider-directed
+conservative treatment.
+
+You may submit a written appeal within 180 calendar days.`;
+    const segments = denialHighlightSegments(letter);
+    const marked = segments.filter((part) => part.hit);
+    expect(marked).toHaveLength(1);
+    expect(marked[0]!.text).toContain("We denied the requested outpatient MRI");
+    expect(marked[0]!.text).toContain("conservative treatment.");
+    // Segments must reassemble into the original, byte for byte.
+    expect(segments.map((part) => part.text).join("")).toBe(letter);
+  });
+
+  test("highlights a messy fax scan, not its header", () => {
+    const scan = `Aetna*  (fictional)     FAX RECEIVED 09/08/2026  14:22
+*** NOTICE OF ADVERSE BENEFIT DETERMINATION ***
+DECISION:  DENIED - not medically necessary as submitted.
+
+Reason (as written on letter):
+We denied the requested outpatient MRI because the information
+submitted did not show completion of six weeks of provider-directed
+conservative treatment.`;
+    const marked = denialHighlightSegments(scan).filter((part) => part.hit);
+    expect(marked).toHaveLength(1);
+    expect(marked[0]!.text).toContain("because");
+    expect(marked[0]!.text).not.toContain("FAX RECEIVED");
+    expect(marked[0]!.text.length).toBeLessThan(420);
+  });
+
+  test("leaves an excerpt untouched when no reason line is present", () => {
+    const bland = "This notice confirms receipt of your recent correspondence.";
+    expect(denialHighlightSegments(bland)).toEqual([
+      { text: bland, hit: false },
+    ]);
+    expect(denialHighlightSegments("")).toEqual([{ text: "", hit: false }]);
   });
 
   test("matches quotes despite whitespace drift", () => {

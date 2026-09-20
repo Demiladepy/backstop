@@ -248,3 +248,76 @@ export function curatedCandidatesForDenial(documentExcerpt: string) {
   const wantsImaging = signals.some((s) => /mri|spine|imaging/i.test(s));
   return CURATED_POLICY_URLS.filter((row) => wantsImaging || !row.imaging);
 }
+
+/**
+ * Reason phrases a denial letter uses, most specific first. The grounding pane
+ * highlights the line the appeal answers, so a vague match ("adverse benefit
+ * determination" in a header) is worse than no match at all.
+ */
+const DENIAL_REASON_TIERS: readonly RegExp[] = [
+  /\bdeni(?:ed|al)\b[^]*?\bbecause\b/i,
+  /\bdoes not meet\b/i,
+  /\bdid not show\b/i,
+  /\bnot medically necessary\b/i,
+  /\bmedical[- ]necessity criteria\b/i,
+  /\bnot covered\b/i,
+];
+
+/** A highlight longer than this is a run-on header, not the reason line. */
+const MAX_DENIAL_HIT_CHARS = 420;
+
+export type DenialSegment = { text: string; hit: boolean };
+
+/**
+ * Locate `needle` inside `haystack` tolerating different whitespace. The
+ * reason sentence is found in a whitespace-collapsed copy, but the pane
+ * renders the original, which wraps across lines — a plain indexOf always
+ * misses, which is why the highlight silently never appeared.
+ */
+export function locateFlexible(
+  haystack: string,
+  needle: string,
+): { start: number; end: number } | null {
+  const tokens = needle.trim().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) {
+    return null;
+  }
+  const pattern = tokens.map(escapeRegExp).join("\\s+");
+  const match = new RegExp(pattern, "i").exec(haystack);
+  return match ? { start: match.index, end: match.index + match[0].length } : null;
+}
+
+/**
+ * Split a denial excerpt into plain and highlighted segments for the grounding
+ * pane. Works on any denial letter, not only the blessed sample.
+ */
+export function denialHighlightSegments(excerpt: string): DenialSegment[] {
+  const plain: DenialSegment[] = [{ text: excerpt, hit: false }];
+  const normalized = excerpt.replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    return plain;
+  }
+  const sentences = normalized
+    .split(/(?<=[.!?])\s+/)
+    .filter((sentence) => sentence.length <= MAX_DENIAL_HIT_CHARS);
+
+  let hit: string | null = null;
+  for (const tier of DENIAL_REASON_TIERS) {
+    hit = sentences.find((sentence) => tier.test(sentence)) ?? null;
+    if (hit) {
+      break;
+    }
+  }
+  if (!hit) {
+    return plain;
+  }
+  const at = locateFlexible(excerpt, hit);
+  if (!at) {
+    return plain;
+  }
+  return [
+    { text: excerpt.slice(0, at.start), hit: false },
+    { text: excerpt.slice(at.start, at.end), hit: true },
+    { text: excerpt.slice(at.end), hit: false },
+  ].filter((part) => part.text.length > 0);
+}
