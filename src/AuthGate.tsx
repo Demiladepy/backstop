@@ -207,6 +207,17 @@ export function AuthGate({ children }: { children: ReactNode }) {
             </ol>
           </section>
 
+          <figure className="aw-breakthrough" aria-hidden="true">
+            <img
+              src="/images/moss.jpg"
+              alt=""
+              width={1600}
+              height={900}
+              loading="lazy"
+              decoding="async"
+            />
+          </figure>
+
           <section className="aw-section" id="human-gate" aria-labelledby="gate-title">
             <div className="aw-dark-block">
               <div className="aw-dark-copy">
@@ -288,6 +299,17 @@ export function AuthGate({ children }: { children: ReactNode }) {
               ))}
             </ul>
           </section>
+
+          <figure className="aw-breakthrough aw-breakthrough-close" aria-hidden="true">
+            <img
+              src="/images/forest.jpg"
+              alt=""
+              width={1600}
+              height={900}
+              loading="lazy"
+              decoding="async"
+            />
+          </figure>
 
           <section className="aw-close">
             <h2>Open the private demo when you are ready.</h2>

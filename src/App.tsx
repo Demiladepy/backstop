@@ -6,6 +6,7 @@ import { api } from '../convex/_generated/api'
 import type { Doc, Id } from '../convex/_generated/dataModel'
 import './App.css'
 import './awesomic.css'
+import './depth.css'
 import { AuthGate } from './AuthGate'
 import { BrandMark } from './BrandMark'
 
@@ -244,7 +245,8 @@ function Workspace() {
   }
 
   return (
-    <div className="product-shell">
+    <div className="product-shell product-shell-depth">
+      <div className="product-atmosphere" aria-hidden="true" />
       <a className="skip-link" href="#main-content">Skip to main content</a>
       <header className="product-header">
         <button
@@ -336,7 +338,8 @@ function CaseBoard({
   const needsReview = ordered.filter((item) => item.status === 'awaiting_approval')
 
   return (
-    <section className="board page-enter" aria-labelledby="board-title">
+    <section className="board page-enter board-depth" aria-labelledby="board-title">
+      <div className="board-atmosphere" aria-hidden="true" />
       <div className="board-canvas">
         <header className="board-toolbar">
           <div>
@@ -501,7 +504,8 @@ function Intake({
   }
 
   return (
-    <section className="intake page-enter" aria-labelledby="intake-title">
+    <section className="intake page-enter intake-depth" aria-labelledby="intake-title">
+      <div className="intake-atmosphere" aria-hidden="true" />
       <div className="intake-shell">
         <button className="back-button" type="button" onClick={onCancel}>
           ← Cases
@@ -637,8 +641,9 @@ function CaseWorkspace({
 
   return (
     <section
-      className={`case-workspace page-enter${tab === 'appeal' ? ' is-appeal' : ''}`}
+      className={`case-workspace page-enter workspace-depth${tab === 'appeal' ? ' is-appeal' : ''}`}
     >
+      <div className="workspace-atmosphere" aria-hidden="true" />
       <aside className="case-rail" aria-label="Case navigation">
         <button className="back-button" type="button" onClick={onBoard}>← All cases</button>
         <p className="rail-label">Cases</p>
@@ -803,7 +808,7 @@ function CaseOverview({
 }) {
   const next = getNextStep(detail)
   return (
-    <div className="overview-grid">
+    <div className="overview-grid overview-depth">
       <section className="next-step" aria-labelledby="next-title">
         <p className="kicker">Next action</p>
         <h2 id="next-title">{next.title}</h2>
@@ -930,7 +935,7 @@ function EvidenceView({
   const numbers = sourceNumberMap(detail.sources)
 
   return (
-    <div className="evidence-layout">
+    <div className="evidence-layout evidence-depth">
       <section className="document-column">
         <div className="section-heading">
           <div><p className="kicker">Documents</p><h2>Case documents</h2></div>
@@ -1250,7 +1255,8 @@ function AppealView({
   const canSend = Boolean(detail.case.counterpartyName && detail.case.counterpartyEmail)
 
   return (
-    <div className="appeal-layout">
+    <div className="appeal-layout appeal-depth">
+      <div className="appeal-atmosphere" aria-hidden="true" />
       <div className="appeal-reading appeal-grounding">
         <aside className="denial-compare" aria-label="Denial letter">
           <p className="props-label">Denial</p>
@@ -1567,7 +1573,7 @@ function EmailView({
     (detail.case.status === 'drafting' || detail.case.status === 'awaiting_reply')
 
   return (
-    <div className="email-layout">
+    <div className="email-layout email-depth">
       <header className="thread-header">
         <div>
           <p className="kicker">Correspondence</p>
@@ -1675,7 +1681,7 @@ function WatchView({
   }
 
   return (
-    <div className="overview-grid">
+    <div className="overview-grid watch-depth">
       <section className="next-step">
         <p className="kicker">Watch</p>
         <h2>Watch the deadline.</h2>
@@ -1780,7 +1786,7 @@ function WatchView({
 
 function AuditView({ audit }: { audit: Doc<'auditLog'>[] }) {
   return (
-    <div className="audit-layout">
+    <div className="audit-layout audit-depth">
       <header>
         <p className="kicker">Record</p>
         <h2>How this case ran.</h2>
