@@ -176,6 +176,34 @@ action is audited.
 - Strip inline `(sourceIds: [...])` the model occasionally wrote into prose;
   raw document ids must never reach a payer.
 
+### Day 9 — Delivery, one rail, one brand
+
+- **No appeal email had ever actually been delivered.** The app posted to
+  `POST /v0/inboxes/{id}/messages`; AgentMail's send route is
+  `/v0/inboxes/{id}/messages/send`, so every send returned 404 and fell back to
+  the component workpool, which then failed with `AGENTMAIL_API_KEY is not set`
+  (deployment env vars are not visible inside a component). The message row
+  still said `sent`. Fixed the route; sends now return a real AgentMail
+  `message_id` and `thread_id`, and the audit records
+  `external.agentmail.send_delivered` instead of `send_queued`.
+- A component enqueue is a queue ticket, not proof of delivery, so it no longer
+  writes `status: "sent"`. Only a confirmed HTTP send may claim that.
+- Outbound rows now persist the AgentMail `thread_id`, so a real reply threads
+  against the message it answers.
+- **One rail.** Email and Watch only join the tab bar once the appeal clears
+  the human gate. Before that the motion is Case -> Evidence -> Appeal ->
+  approve, with no side door. A tab that is not on the rail falls back to Case
+  rather than rendering an empty pane.
+- **The reply loop is reachable again, without polluting the hero.** The
+  fictional payer address never answers, so Email (post-send only) offers one
+  labelled demo reply. Live smoke now drives it and asserts the inbound message
+  threads back and that a reply still sends nothing on its own.
+- **One brand.** The hero used a hardcoded cobalt `#5266eb` that matched no
+  token, so the same "Enter private demo" action rendered in three different
+  colours. It is now the sanctioned dark-hero inversion: Snow fill, Obsidian
+  text.
+- `package.json` renamed `redress` -> `backstop` to match the product and repo.
+
 ## Submission links
 
 - Live app: https://festive-roadrunner-713.convex.site

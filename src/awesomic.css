@@ -338,22 +338,29 @@
   margin-top: 12px;
 }
 
+/*
+ * Primary action on the dark photographic hero. Cobalt was a one-off colour
+ * that belonged to no token, so the same "Enter private demo" action rendered
+ * in three different colours across the page. On a dark hero the system's
+ * Obsidian fill has no contrast, so this is the sanctioned inversion: Snow
+ * fill, Obsidian text. Same action, same brand, everywhere.
+ */
 .aw-cta-cobalt {
   min-height: 48px;
   padding: 12px 24px;
   border: 0;
   border-radius: 32px;
-  background: var(--color-cobalt);
-  color: var(--color-pure-white);
+  background: var(--color-snow, #ffffff);
+  color: var(--color-obsidian, #09090b);
   font-family: var(--font-arcadia);
   font-size: 16px;
-  font-weight: 400;
+  font-weight: 500;
   box-shadow: none;
 }
 
 .aw-cta-cobalt:hover:not(:disabled) {
-  opacity: 0.92;
-  filter: brightness(1.05);
+  background: var(--color-paper, #f4f4f5);
+  filter: none;
 }
 
 .aw-ghost-ivory {

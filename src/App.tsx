@@ -589,6 +589,21 @@ function CaseWorkspace({
   const thread = useQuery(api.email.listThread, { caseId })
   const [tab, setTab] = useState<CaseTab>(initialTab ?? 'case')
 
+  // Correspondence and monitoring only become part of the case once the
+  // appeal has cleared the human gate. Before that the rail is one motion:
+  // Case -> Evidence -> Appeal -> approve.
+  const pastSendGate =
+    detail != null &&
+    (['approved', 'sent', 'awaiting_reply', 'resolved', 'closed'] as const).some(
+      (status) => status === detail.case.status,
+    )
+
+  const showEmailTab = (detail?.messages.length ?? 0) > 0 || pastSendGate
+  const showWatchTab = (detail?.monitors.length ?? 0) > 0 || pastSendGate
+  const tabHidden =
+    (tab === 'email' && !showEmailTab) || (tab === 'watch' && !showWatchTab)
+  const activeTab: CaseTab = tabHidden ? 'case' : tab
+
   if (detail === undefined) return <CaseSkeleton onBoard={onBoard} />
   if (detail === null) {
     return (
@@ -602,7 +617,7 @@ function CaseWorkspace({
 
   return (
     <section
-      className={`case-workspace page-enter workspace-depth${tab === 'appeal' ? ' is-appeal' : ''}`}
+      className={`case-workspace page-enter workspace-depth${activeTab === 'appeal' ? ' is-appeal' : ''}`}
     >
       <div className="workspace-atmosphere" aria-hidden="true" />
       <aside className="case-rail" aria-label="Case navigation">
@@ -629,19 +644,25 @@ function CaseWorkspace({
       <div className="case-main">
         <CaseHeader caseRow={detail.case} />
         <nav className="case-tabs" aria-label="Case file sections">
-          {([
-            ['case', 'Case'],
-            ['evidence', `Evidence ${detail.sources.length}`],
-            ['appeal', `Appeal ${detail.drafts.length}`],
-            ['email', `Email ${detail.messages.length}`],
-            ['watch', `Watch ${detail.monitors.length}`],
-            ['record', `Record ${detail.audit.length}`],
-          ] as Array<[CaseTab, string]>).map(([value, label]) => (
+          {(
+            [
+              ['case', 'Case'],
+              ['evidence', `Evidence ${detail.sources.length}`],
+              ['appeal', `Appeal ${detail.drafts.length}`],
+              ...(showEmailTab
+                ? ([['email', `Email ${detail.messages.length}`]] as Array<[CaseTab, string]>)
+                : []),
+              ...(showWatchTab
+                ? ([['watch', `Watch ${detail.monitors.length}`]] as Array<[CaseTab, string]>)
+                : []),
+              ['record', `Record ${detail.audit.length}`],
+            ] as Array<[CaseTab, string]>
+          ).map(([value, label]) => (
             <button
               key={value}
               type="button"
-              className={tab === value ? 'active' : ''}
-              aria-current={tab === value ? 'page' : undefined}
+              className={activeTab === value ? 'active' : ''}
+              aria-current={activeTab === value ? 'page' : undefined}
               onClick={() => setTab(value)}
             >
               {label}
@@ -649,22 +670,22 @@ function CaseWorkspace({
           ))}
         </nav>
         <div className="case-content">
-          {tab === 'case' && <CaseOverview detail={detail} setTab={setTab} />}
-          {tab === 'evidence' && <EvidenceView detail={detail} />}
-          {tab === 'appeal' && (
+          {activeTab === 'case' && <CaseOverview detail={detail} setTab={setTab} />}
+          {activeTab === 'evidence' && <EvidenceView detail={detail} />}
+          {activeTab === 'appeal' && (
             <AppealView
               key={`${detail.drafts[0]?._id ?? 'empty'}-${detail.drafts[0]?.updatedAt ?? 0}`}
               detail={detail}
               setTab={setTab}
             />
           )}
-          {tab === 'email' && <EmailView detail={detail} thread={thread} setTab={setTab} />}
-          {tab === 'watch' && <WatchView detail={detail} />}
-          {tab === 'record' && <AuditView audit={detail.audit} />}
+          {activeTab === 'email' && <EmailView detail={detail} thread={thread} setTab={setTab} />}
+          {activeTab === 'watch' && <WatchView detail={detail} />}
+          {activeTab === 'record' && <AuditView audit={detail.audit} />}
         </div>
       </div>
 
-      {tab !== 'appeal' && (
+      {activeTab !== 'appeal' && (
         <CaseProperties detail={detail} setTab={setTab} />
       )}
     </section>
@@ -1533,6 +1554,9 @@ function EmailView({
   const messages = [...detail.messages].sort((a, b) => a.createdAt - b.createdAt)
   const hasOutbound = messages.some((message) => message.direction === 'outbound')
   const hasInbound = messages.some((message) => message.direction === 'inbound')
+  const simulateReply = useMutation(api.email.simulateInboundReply)
+  const [replyBusy, setReplyBusy] = useState(false)
+  const [replyError, setReplyError] = useState<string | null>(null)
   const latestDraft = detail.drafts[0]
   const followUpReady =
     hasInbound &&
@@ -1579,6 +1603,41 @@ function EmailView({
             Watch Appeal →
           </button>
         </div>
+      )}
+      {hasOutbound && !hasInbound && (
+        <div className="reply-demo" role="group" aria-label="Demonstrate the reply loop">
+          <div>
+            <p className="props-label">Two-way demo</p>
+            <strong>No reply yet from {detail.case.counterpartyName}</strong>
+            <p>
+              Real payer replies arrive on the AgentMail webhook and thread here.
+              This fictional address never answers, so you can inject one demo
+              reply to see the loop. A reply never sends anything — the follow-up
+              still needs your approval.
+            </p>
+          </div>
+          <button
+            className="secondary-action"
+            type="button"
+            disabled={replyBusy}
+            onClick={() => {
+              setReplyBusy(true)
+              setReplyError(null)
+              void simulateReply({ caseId: detail.case._id })
+                .catch((error: unknown) =>
+                  setReplyError(error instanceof Error ? error.message : 'Could not add the demo reply.'),
+                )
+                .finally(() => setReplyBusy(false))
+            }}
+          >
+            {replyBusy ? 'Adding demo reply…' : 'Inject a fictional payer reply'}
+          </button>
+        </div>
+      )}
+      {replyError && (
+        <p className="form-error" role="alert">
+          {replyError}
+        </p>
       )}
       {messages.length === 0 ? (
         <div className="thread-empty">

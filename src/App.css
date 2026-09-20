@@ -4494,3 +4494,33 @@ dd {
   color: var(--graphite, #18181b);
   background: var(--snow, #ffffff);
 }
+
+.reply-demo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 20px;
+  padding: 16px 18px;
+  border: 1px dashed var(--color-cloud, #ececee);
+  border-radius: 14px;
+  background: var(--color-snow, #ffffff);
+}
+
+.reply-demo > div {
+  flex: 1 1 320px;
+}
+
+.reply-demo strong {
+  display: block;
+  margin: 2px 0 6px;
+}
+
+.reply-demo p {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--color-graphite, #18181b);
+}

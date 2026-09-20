@@ -27,18 +27,24 @@ Drafts and sends the appeals you approve — not legal or medical advice.
 
 ## Pre-submit checklist
 
-- [x] Single hero rail (no caseload fillers / simulate inbound / Watch demo beat in UI)
+Verified on the live convex.site URL, not locally.
+
+- [x] Single hero rail — Email and Watch only appear after the send gate
 - [x] Appeal three-pane grounding (denial · claim · policy proof)
-- [x] Upload-on-rail + messy sample under `public/samples/`
-- [x] One product skin (landing uses `App.css`; cinematic `landing-ah` removed)
-- [x] Canonical live URL is `festive-roadrunner-713.convex.site` in README / DEMO / SUBMISSION / e2e defaults
-- [ ] Replace release webm with voiced remux (you record VO; captions in `demo/backstop-hero-demo.srt`)
-- [ ] `git push origin master` includes this pass
-- [x] `npx convex deploy -y` on prod after backend changes
-- [ ] Walk DEMO.md hero path once on the live convex.site URL
-- [x] `npx playwright test --config=e2e/live-smoke.config.ts` passes against convex.site (3 runs green)
-- [ ] Paste links + pitch on vibeapps (sign-in required — do this yourself)
-- [ ] Post 40s social cut (script in `demo/social-40s.md`)
+- [x] Denial reason line actually highlights (was silently broken on every letter)
+- [x] Cited policy clauses are real, verbatim, and link to live pages
+- [x] Approve genuinely delivers through AgentMail (route was 404 until Day 9)
+- [x] Reply threads back and the follow-up still needs approval
+- [x] Proven on an uploaded messy fax scan, not only the seeded packet
+- [x] One host, one build, one brand accent
+- [x] `npm run lint`, `npm run build`, `npm test` (26) green
+- [x] `npx playwright test --config=e2e/live-smoke.config.ts` green against convex.site
+- [x] `npx convex deploy -y` + static hosting deployed to prod
+- [x] `git push origin master`
+- [ ] **Record the voiced video** (under 3 min; captions in `demo/backstop-hero-demo.srt`)
+- [ ] **Walk DEMO.md once yourself** on https://festive-roadrunner-713.convex.site
+- [ ] **Post the 40s cut** on X tagging @convex @OpenAI @firecrawl @agentmail
+- [ ] **Submit on vibeapps** (sign-in required — do this yourself)
 
 ## Social 40s
 

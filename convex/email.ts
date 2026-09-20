@@ -306,7 +306,7 @@ async function sendMessageViaHttp(
   const baseUrl = (
     process.env.AGENTMAIL_BASE_URL ?? "https://api.agentmail.to/v0"
   ).replace(/\/$/, "");
-  const response = await fetch(`${baseUrl}/inboxes/${inboxId}/messages`, {
+  const response = await fetch(`${baseUrl}/inboxes/${inboxId}/messages/send`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -331,7 +331,10 @@ async function sendMessageViaHttp(
   if (!messageId) {
     throw new Error("AgentMail send did not return a message id");
   }
-  return messageId;
+  const threadId = record
+    ? stringField(record, "thread_id", "threadId")
+    : undefined;
+  return { messageId, threadId };
 }
 
 export const enqueueApprovedDraft = internalMutation({
@@ -342,6 +345,8 @@ export const enqueueApprovedDraft = internalMutation({
     inboxEmail: v.string(),
     /** When set, skip component enqueue (app already delivered via HTTP). */
     outboundId: v.optional(v.string()),
+    /** AgentMail thread the send landed in; lets replies thread locally. */
+    threadId: v.optional(v.string()),
   },
   returns: v.union(v.string(), v.null()),
   handler: async (ctx, args) => {
@@ -383,10 +388,11 @@ export const enqueueApprovedDraft = internalMutation({
       draftId: draft._id,
       direction: "outbound",
       channel: "email",
-      status: "sent",
+      status: args.outboundId ? "sent" : "approved",
       subject: draft.subject,
       body,
       agentMailOutboundId: outboundId,
+      threadId: args.threadId,
       from: args.inboxEmail,
       to: caseRow.counterpartyEmail,
       createdAt: now,
@@ -405,7 +411,9 @@ export const enqueueApprovedDraft = internalMutation({
       caseId: draft.caseId,
       ownerId: args.ownerId,
       actor: "agent",
-      event: "external.agentmail.send_queued",
+      event: args.outboundId
+        ? "external.agentmail.send_delivered"
+        : "external.agentmail.send_queued",
       operationId: `agentmail:send:${draft._id}`,
       status: "succeeded",
       entityType: "message",
@@ -484,10 +492,13 @@ export const recordLocalDemoSend = internalMutation({
       draftId: draft._id,
       direction: "outbound",
       channel: "email",
+      // Local demo path is an explicit stand-in for delivery, not a claim
+      // about AgentMail; it only runs when DEMO_ALLOW_LOCAL_SEND=1.
       status: "sent",
       subject: draft.subject,
       body,
       agentMailOutboundId: outboundId,
+      threadId: `demo-thread:${draft.caseId}`,
       from: args.inboxEmail,
       to: caseRow.counterpartyEmail,
       createdAt: now,
@@ -567,7 +578,7 @@ export const sendApprovedDraft = internalAction({
         throw new Error("Counterparty email is required before sending");
       }
       try {
-        const messageId = await sendMessageViaHttp(inbox.inboxId, {
+        const sent = await sendMessageViaHttp(inbox.inboxId, {
           to,
           subject: context.draft.subject,
           text: draftBody,
@@ -578,7 +589,8 @@ export const sendApprovedDraft = internalAction({
           ownerId: args.ownerId,
           inboxId: inbox.inboxId,
           inboxEmail: inbox.inboxEmail,
-          outboundId: messageId,
+          outboundId: sent.messageId,
+          threadId: sent.threadId,
         });
       } catch (httpSendError) {
         // Fall back to component enqueue (may still persist a local outbound).
