@@ -255,6 +255,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
               loading="lazy"
               decoding="async"
             />
+            <figcaption className="aw-breakthrough-caption">
+              <span>Evidence first</span>
+              <strong>Every claim needs a source you can open.</strong>
+            </figcaption>
           </figure>
 
           <section className="aw-section" id="human-gate" aria-labelledby="gate-title">
@@ -395,6 +399,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
               loading="lazy"
               decoding="async"
             />
+            <figcaption className="aw-breakthrough-caption">
+              <span>Human gate</span>
+              <strong>Nothing leaves until you approve the exact words.</strong>
+            </figcaption>
           </figure>
 
           <section className="aw-close">

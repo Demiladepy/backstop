@@ -279,7 +279,7 @@
 
 .aw-hero-mercury .aw-hero-copy {
   display: grid;
-  gap: 20px;
+  gap: 28px;
   justify-items: center;
   max-width: 640px;
   width: 100%;
@@ -296,7 +296,8 @@
   font-family: var(--font-arcadia);
   font-size: 12px;
   font-weight: 400;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   backdrop-filter: blur(8px);
 }
 
@@ -305,37 +306,38 @@
   font-family: var(--font-arcadiadisplay);
   font-size: clamp(2.75rem, 8vw, 65px);
   font-weight: 500;
-  line-height: 1.1;
-  letter-spacing: 0.01em;
+  line-height: 1.18;
+  letter-spacing: 0.04em;
   color: var(--color-pure-white);
   text-transform: none;
 }
 
 .aw-hero-mercury .aw-hero-copy h2 {
   margin: 0;
-  max-width: 18ch;
+  max-width: 20ch;
   font-family: var(--font-arcadiadisplay);
   font-size: clamp(1.35rem, 3vw, 28px);
   font-weight: 500;
-  line-height: 1.2;
-  letter-spacing: 0.015em;
+  line-height: 1.45;
+  letter-spacing: 0.03em;
   color: var(--color-ivory-text);
 }
 
 .aw-hero-mercury .aw-lede {
   margin: 0;
-  max-width: 36ch;
+  max-width: 38ch;
   font-family: var(--font-arcadia);
   font-size: 18px;
   font-weight: 500;
-  line-height: 1.35;
+  line-height: 1.65;
+  letter-spacing: 0.02em;
   color: var(--color-ash-text);
 }
 
 .aw-hero-mercury .aw-hero-actions {
   justify-content: center;
   gap: 12px;
-  margin-top: 12px;
+  margin-top: 20px;
 }
 
 /*
@@ -401,23 +403,26 @@
 
 .aw-peek-card {
   display: grid;
-  gap: 8px;
+  gap: 12px;
   align-content: start;
-  min-height: 140px;
+  min-height: 156px;
   padding: var(--card-padding);
-  border: 1px solid var(--color-cloud);
+  border: 1.5px solid #09090b;
   border-radius: var(--radius-cards);
   background: var(--color-snow);
 }
 
 .aw-peek-card span {
   font-size: 12px;
+  letter-spacing: 0.04em;
   color: var(--color-fog);
 }
 
 .aw-peek-card strong {
   font-size: 20px;
   font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
   color: var(--color-obsidian);
 }
 
