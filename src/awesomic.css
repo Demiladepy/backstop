@@ -136,6 +136,52 @@
   padding: 10px 16px;
 }
 
+/* Photo-hero landing: nav sits in the alpine dusk, not on a white bar */
+.landing-aw.is-photo-hero .aw-nav {
+  background: rgba(12, 14, 16, 0.58);
+  border-bottom: 1px solid rgba(244, 240, 230, 0.1);
+  backdrop-filter: blur(18px);
+}
+
+.landing-aw.is-photo-hero .aw-brand,
+.landing-aw.is-photo-hero .aw-brand em {
+  color: #f4f0e6;
+}
+
+.landing-aw.is-photo-hero .brand-mark-plate {
+  fill: rgba(244, 240, 230, 0.1);
+}
+
+.landing-aw.is-photo-hero .brand-mark-geometry {
+  fill: #f4f0e6;
+}
+
+.landing-aw.is-photo-hero .aw-nav-links a {
+  color: rgba(244, 240, 230, 0.78);
+}
+
+.landing-aw.is-photo-hero .aw-nav-links a:hover {
+  color: #f4f0e6;
+}
+
+.landing-aw.is-photo-hero .aw-cta-pill {
+  background: transparent;
+  border: 1px solid rgba(244, 240, 230, 0.34);
+  color: #f4f0e6;
+  box-shadow: none;
+}
+
+.landing-aw.is-photo-hero .aw-cta-pill:hover:not(:disabled) {
+  background: rgba(244, 240, 230, 0.08);
+  opacity: 1;
+}
+
+.landing-aw.is-photo-hero .aw-menu-btn {
+  background: transparent;
+  border-color: rgba(244, 240, 230, 0.28);
+  color: #f4f0e6;
+}
+
 .aw-ghost {
   min-height: 44px;
   display: inline-flex;
@@ -216,29 +262,26 @@
   margin-top: 8px;
 }
 
-/* —— Mercury hero only (alpine banking at blue hour) —— */
+/* Photographic alpine hero — image-led, left-weighted, ember as the one action */
 .aw-hero-mercury {
-  --color-onyx-canvas: #171721;
-  --color-graphite-card: #1e1e2a;
-  --color-ivory-text: #ededf3;
-  --color-ash-text: #c3c3cc;
-  --color-mist-border: #e2e3ed;
-  --color-cobalt: #5266eb;
-  --color-pure-white: #ffffff;
-  --font-arcadia: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-arcadiadisplay: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --color-onyx-canvas: #0c0e10;
+  --color-ivory-text: #f4f0e6;
+  --color-ash-text: rgba(244, 240, 230, 0.72);
+  --font-arcadia: var(--font-cosmica);
+  --font-arcadiadisplay: var(--font-cosmica);
 
   position: relative;
   isolation: isolate;
   width: 100%;
-  min-height: min(92svh, 900px);
+  min-height: min(100svh, 920px);
   margin: 0;
   padding: 0;
   display: grid;
-  place-items: center;
+  place-items: stretch;
   overflow: hidden;
   background: var(--color-onyx-canvas);
   color: var(--color-ivory-text);
+  gap: 0;
 }
 
 .aw-hero-mercury-media {
@@ -252,8 +295,8 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 40%;
-  filter: saturate(0.75) brightness(0.72) contrast(1.05);
+  object-position: 58% 42%;
+  filter: saturate(1.08) brightness(0.94) contrast(1.08);
 }
 
 .aw-hero-mercury-overlay {
@@ -261,126 +304,121 @@
   inset: 0;
   z-index: 1;
   background:
-    linear-gradient(180deg, rgba(23, 23, 33, 0.55) 0%, rgba(23, 23, 33, 0.72) 48%, rgba(23, 23, 33, 0.92) 100%),
-    radial-gradient(ellipse 70% 55% at 50% 35%, transparent 0%, rgba(23, 23, 33, 0.45) 100%);
+    linear-gradient(105deg, rgba(10, 12, 14, 0.82) 0%, rgba(10, 12, 14, 0.48) 38%, rgba(10, 12, 14, 0.12) 68%, rgba(10, 12, 14, 0.28) 100%),
+    linear-gradient(180deg, rgba(10, 12, 14, 0.28) 0%, transparent 32%, rgba(10, 12, 14, 0.22) 70%, rgba(10, 12, 14, 0.72) 100%);
   pointer-events: none;
 }
 
 .aw-hero-mercury-inner {
   position: relative;
   z-index: 2;
-  width: min(640px, calc(100% - 2 * var(--page-gutter)));
+  width: min(1200px, calc(100% - 2 * var(--page-gutter)));
   margin: 0 auto;
-  padding: clamp(96px, 14vh, 140px) 0 clamp(72px, 10vh, 112px);
+  padding: clamp(72px, 12vh, 120px) 0 clamp(148px, 18vh, 200px);
   display: grid;
-  place-items: center;
-  text-align: center;
+  place-items: start;
+  text-align: left;
 }
 
 .aw-hero-mercury .aw-hero-copy {
   display: grid;
-  gap: 28px;
-  justify-items: center;
-  max-width: 640px;
+  gap: 22px;
+  justify-items: start;
+  max-width: 36rem;
   width: 100%;
 }
 
 .aw-mercury-badge {
   display: inline-flex;
   align-items: center;
-  padding: 8px 16px;
-  border: 1px solid rgba(226, 227, 237, 0.35);
-  border-radius: 40px;
-  background: rgba(30, 30, 42, 0.55);
+  padding: 7px 12px;
+  border: 1px solid rgba(244, 240, 230, 0.22);
+  border-radius: 12px;
+  background: rgba(12, 14, 16, 0.42);
   color: var(--color-ivory-text);
-  font-family: var(--font-arcadia);
-  font-size: 12px;
-  font-weight: 400;
-  letter-spacing: 0.06em;
+  font-family: var(--font-cosmica);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(10px);
 }
 
 .aw-hero-mercury .aw-display {
   margin: 0;
-  font-family: var(--font-arcadiadisplay);
-  font-size: clamp(2.75rem, 8vw, 65px);
-  font-weight: 500;
-  line-height: 1.18;
-  letter-spacing: 0.04em;
-  color: var(--color-pure-white);
+  font-family: var(--font-cosmica);
+  font-size: clamp(3.4rem, 9vw, 5.5rem);
+  font-weight: 600;
+  line-height: 0.94;
+  letter-spacing: -0.045em;
+  color: var(--color-ivory-text);
   text-transform: none;
 }
 
 .aw-hero-mercury .aw-hero-copy h2 {
   margin: 0;
-  max-width: 20ch;
-  font-family: var(--font-arcadiadisplay);
-  font-size: clamp(1.35rem, 3vw, 28px);
+  max-width: 16ch;
+  font-family: var(--font-cosmica);
+  font-size: clamp(1.35rem, 2.6vw, 1.85rem);
   font-weight: 500;
-  line-height: 1.45;
-  letter-spacing: 0.03em;
-  color: var(--color-ivory-text);
+  line-height: 1.28;
+  letter-spacing: -0.02em;
+  color: #ebe6db;
 }
 
 .aw-hero-mercury .aw-lede {
   margin: 0;
-  max-width: 38ch;
-  font-family: var(--font-arcadia);
-  font-size: 18px;
-  font-weight: 500;
-  line-height: 1.65;
-  letter-spacing: 0.02em;
+  max-width: 36ch;
+  font-family: var(--font-cosmica);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.55;
+  letter-spacing: 0;
   color: var(--color-ash-text);
 }
 
 .aw-hero-mercury .aw-hero-actions {
-  justify-content: center;
-  gap: 12px;
-  margin-top: 20px;
+  justify-content: flex-start;
+  gap: 10px;
+  margin-top: 8px;
 }
 
-/*
- * Primary action on the dark photographic hero. Cobalt was a one-off colour
- * that belonged to no token, so the same "Enter private demo" action rendered
- * in three different colours across the page. On a dark hero the system's
- * Obsidian fill has no contrast, so this is the sanctioned inversion: Snow
- * fill, Obsidian text. Same action, same brand, everywhere.
- */
+/* Ember is CTA-only on the dark photograph. White fill is banned here. */
 .aw-cta-cobalt {
   min-height: 48px;
-  padding: 12px 24px;
+  padding: 12px 22px;
   border: 0;
-  border-radius: 32px;
-  background: var(--color-snow, #ffffff);
-  color: var(--color-obsidian, #09090b);
-  font-family: var(--font-arcadia);
-  font-size: 16px;
-  font-weight: 500;
+  border-radius: var(--radius-buttons);
+  background: var(--color-ember);
+  color: #fff7f0;
+  font-family: var(--font-cosmica);
+  font-size: 15px;
+  font-weight: 600;
   box-shadow: none;
 }
 
 .aw-cta-cobalt:hover:not(:disabled) {
-  background: var(--color-paper, #f4f4f5);
+  background: #e24f00;
   filter: none;
 }
 
 .aw-ghost-ivory {
   min-height: 48px;
-  padding: 10px 20px;
-  border: 1px solid var(--color-mist-border);
-  border-radius: 40px;
-  background: transparent;
+  padding: 10px 18px;
+  border: 1px solid rgba(244, 240, 230, 0.28);
+  border-radius: var(--radius-buttons);
+  background: rgba(12, 14, 16, 0.32);
   color: var(--color-ivory-text);
-  font-family: var(--font-arcadia);
-  font-size: 16px;
+  font-family: var(--font-cosmica);
+  font-size: 15px;
   font-weight: 400;
+  backdrop-filter: blur(10px);
 }
 
 .aw-ghost-ivory:hover {
-  border-color: var(--color-pure-white);
-  color: var(--color-pure-white);
-  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(244, 240, 230, 0.5);
+  color: #fffaf0;
+  background: rgba(12, 14, 16, 0.5);
 }
 
 .aw-hero-mercury .form-error {
@@ -389,7 +427,7 @@
 
 .aw-peek-bridge {
   width: min(1200px, 100%);
-  margin: -40px auto 0;
+  margin: -88px auto 0;
   padding: 0 var(--page-gutter) var(--spacing-64);
   position: relative;
   z-index: 3;
@@ -407,15 +445,17 @@
   align-content: start;
   min-height: 156px;
   padding: var(--card-padding);
-  border: 1.5px solid #09090b;
+  border: 1px solid rgba(244, 240, 230, 0.18);
   border-radius: var(--radius-cards);
-  background: var(--color-snow);
+  background: rgba(14, 16, 18, 0.72);
+  color: #f4f0e6;
+  backdrop-filter: blur(16px);
 }
 
 .aw-peek-card span {
   font-size: 12px;
   letter-spacing: 0.04em;
-  color: var(--color-fog);
+  color: rgba(244, 240, 230, 0.58);
 }
 
 .aw-peek-card strong {
@@ -423,7 +463,7 @@
   font-weight: 600;
   line-height: 1.35;
   letter-spacing: 0.01em;
-  color: var(--color-obsidian);
+  color: #f4f0e6;
 }
 
 .aw-peek-card em {
@@ -431,11 +471,11 @@
   width: fit-content;
   margin-top: auto;
   padding: 4px 8px;
-  border: 1px solid var(--color-cloud);
+  border: 1px solid rgba(244, 240, 230, 0.22);
   border-radius: var(--radius-badges);
   font-style: normal;
   font-size: 12px;
-  color: var(--color-graphite);
+  color: #f4f0e6;
 }
 
 .aw-peek-card:nth-child(3) em {
@@ -443,6 +483,11 @@
   background: var(--color-ember);
   color: var(--color-snow);
   font-weight: 500;
+}
+
+.landing-aw.is-photo-hero .aw-peek-card::after {
+  mix-blend-mode: overlay;
+  opacity: 0.14;
 }
 
 .aw-section {
@@ -1151,7 +1196,8 @@
   }
 
   .aw-hero-mercury-inner {
-    padding-top: 88px;
+    padding-top: 48px;
+    padding-bottom: 120px;
   }
 
   .aw-hero-mercury .aw-hero-actions {

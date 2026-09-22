@@ -122,7 +122,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
         </main>
       </AuthLoading>
       <Unauthenticated>
-        <main className="landing landing-aw">
+        <main className="landing landing-aw is-photo-hero">
           <header className="aw-nav">
             <div className="aw-nav-inner">
               <span className="aw-brand" aria-label="Backstop">
