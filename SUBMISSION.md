@@ -9,7 +9,7 @@ before **Sep 22, 2026, 12:00 PM PT**.
 |--------|--------|
 | Live app | https://festive-roadrunner-713.convex.site |
 | Repository | https://github.com/Demiladepy/backstop |
-| Demo video | https://github.com/Demiladepy/backstop/releases/download/demo-video/backstop-hero-demo.webm |
+| Demo video | https://youtu.be/It4H88K9sj0 |
 | Demo script | https://github.com/Demiladepy/backstop/blob/master/DEMO.md |
 
 The app is hosted on Convex static hosting, as the rules require. There is no
@@ -41,7 +41,7 @@ Verified on the live convex.site URL, not locally.
 - [x] `npx playwright test --config=e2e/live-smoke.config.ts` green against convex.site
 - [x] `npx convex deploy -y` + static hosting deployed to prod
 - [x] `git push origin master`
-- [ ] **Record the voiced video** (under 3 min; captions in `demo/backstop-hero-demo.srt`)
+- [x] **Record the voiced video** — https://youtu.be/It4H88K9sj0
 - [ ] **Walk DEMO.md once yourself** on https://festive-roadrunner-713.convex.site
 - [ ] **Post the 40s cut** on X tagging @convex @OpenAI @firecrawl @agentmail
 - [ ] **Submit on vibeapps** (sign-in required — do this yourself)

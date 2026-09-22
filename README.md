@@ -4,13 +4,14 @@ Drafts and sends the appeals you approve — not legal or medical advice.
 
 Backstop turns a medical insurance denial into a cited appeal you control. It reads a sample denial, finds the payer’s published policy, drafts from stored sources, and **does not send until you approve**.
 
-[Live app](https://festive-roadrunner-713.convex.site) · [Demo script](DEMO.md) · [Demo video](https://github.com/Demiladepy/backstop/releases/download/demo-video/backstop-hero-demo.webm)
+[Live app](https://festive-roadrunner-713.convex.site) · [Demo video](https://youtu.be/It4H88K9sj0) · [Demo script](DEMO.md) · [Concept notes](CONCEPT.md)
 
 **Built for the Convex All Gas Hackathon on four sponsor layers:**
 [@convex](https://x.com/Convex) (state) · [@firecrawl](https://x.com/firecrawl) (evidence) · [@OpenAI](https://x.com/openai) (reasoning) · [@agentmail](https://x.com/agentmail) (correspondence)
 
 <p align="center">
-  <img src="public/images/alpine.jpg" alt="Backstop landing hero — alpine dusk" width="1200" />
+  <a href="https://youtu.be/It4H88K9sj0"><img src="public/images/alpine.jpg" alt="Backstop — watch the 3-minute demo" width="1200" /></a>
+  <br /><em><a href="https://youtu.be/It4H88K9sj0">▶ Watch the 3-minute demo</a></em>
 </p>
 
 One case type. One host. One send gate.
@@ -94,6 +95,7 @@ npx playwright test --config=e2e/live-smoke.config.ts   # live convex.site
 
 | Doc | What it is |
 |-----|------------|
+| [CONCEPT.md](CONCEPT.md) | Why this idea, and the rule it is built on |
 | [DEMO.md](DEMO.md) | Under-3-minute walkthrough for judges |
 | [SUBMISSION.md](SUBMISSION.md) | Links and paste sheet |
 | [hackathon.md](hackathon.md) | Build log |

@@ -228,8 +228,8 @@ action is audited.
 
 - Live app: https://festive-roadrunner-713.convex.site
 - Public repository: https://github.com/Demiladepy/backstop
-- Demo video: https://github.com/Demiladepy/backstop/releases/download/demo-video/backstop-hero-demo.webm
-- Demo release page: https://github.com/Demiladepy/backstop/releases/tag/demo-video
+- Demo video: https://youtu.be/It4H88K9sj0
+- Concept notes: CONCEPT.md
 - Submit on vibeapps.dev before Sep 22, 2026, 12:00 PM PT:
   https://vibeapps.dev/judging/convex-all-gas-hackathon-openai/submit
 

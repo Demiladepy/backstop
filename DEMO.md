@@ -3,8 +3,8 @@
 **Live app:** https://festive-roadrunner-713.convex.site  
 Public repo: https://github.com/Demiladepy/backstop
 
-Silent cut (current release — replace with voiced remux before submit):  
-https://github.com/Demiladepy/backstop/releases/download/demo-video/backstop-hero-demo.webm
+Voiced demo:  
+https://youtu.be/It4H88K9sj0
 
 Captions draft: [`demo/backstop-hero-demo.srt`](demo/backstop-hero-demo.srt)
 
