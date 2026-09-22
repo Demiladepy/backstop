@@ -179,3 +179,19 @@ medical-necessity criteria for advanced imaging.
     expect(content.includes(excerpt!)).toBe(true);
   });
 });
+
+import { extractRejectionReason } from "./replyDraft";
+
+describe("break and repair", () => {
+  test("extracts the stated reason from an upheld denial", () => {
+    const reply = `Re: appeal reference DEMO-4821.
+After review, the denial is upheld.
+Coverage for advanced imaging requires documentation of at least six weeks of provider-directed conservative treatment, such as physical therapy, and the records submitted do not show it.`;
+    const reason = extractRejectionReason(reply);
+    expect(reason).toMatch(/^Coverage for advanced imaging requires/);
+  });
+
+  test("is null for a reply that is not a rejection", () => {
+    expect(extractRejectionReason("Thanks, we received your appeal and are reviewing it.")).toBeNull();
+  });
+});

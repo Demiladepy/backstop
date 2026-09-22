@@ -204,6 +204,26 @@ action is audited.
   text.
 - `package.json` renamed `redress` -> `backstop` to match the product and repo.
 
+### Day 10 — Break and repair
+
+- **Insurer rejects → agent re-grounds → counter-draft, gated.** A reply that
+  upholds the denial now triggers re-grounding: `extractRejectionReason` pulls
+  the stated reason out of the reply, `regroundForRejection` runs a fresh
+  Firecrawl search and scrape aimed at it (same error-page rejection and
+  verbatim-quote checks), and `appendRegroundSources` adds survivors to the case
+  without changing its status. OpenAI then writes a counter-draft that answers
+  the reason point by point, citing only verified sources. It lands as pending
+  approval, so the send gate is unchanged. Verified on prod: rejection →
+  `external.firecrawl.reground` ("2 new policy sources") → counter-draft
+  awaiting approval.
+- Four sponsor layers named in the README: **Convex** (state), **Firecrawl**
+  (evidence), **OpenAI** (reasoning), **AgentMail** (correspondence).
+- UI cleanup: container-query layouts (Evidence and Record overflowed at every
+  laptop width), a clean single-card Record timeline, a visible active tab, no
+  tab-bar scrollbar, a working case rail, seamless neutral grain in place of a
+  tiled purple wallpaper, a correct denial highlight on letters with
+  punctuation-free headers, and a live default URL on Watch.
+
 ## Submission links
 
 - Live app: https://festive-roadrunner-713.convex.site

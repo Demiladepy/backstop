@@ -139,7 +139,8 @@ function describeAuditEvent(event: string): { vendor: string; title: string } {
     'external.agentmail.send_delivered': { vendor: 'AgentMail', title: 'Appeal delivered' },
     'external.agentmail.send': { vendor: 'AgentMail', title: 'Message sent' },
     'external.agentmail.inbound_received': { vendor: 'AgentMail', title: 'Inbound received' },
-    'demo.inbound_simulated': { vendor: 'Demo', title: 'Fictional reply injected' },
+    'demo.inbound_simulated': { vendor: 'Demo', title: 'Insurer rejected the appeal' },
+    'external.firecrawl.reground': { vendor: 'Firecrawl', title: 'Re-grounded against the rejection' },
   }
   if (map[event]) return map[event]
   if (event.startsWith('external.firecrawl')) {
@@ -1277,7 +1278,7 @@ function AppealView({
         <article className="appeal-paper">
           <div className="paper-folio">
             <span>
-              {isFollowUp ? 'Follow-up draft' : 'Draft appeal'} · {latest.status.replaceAll('_', ' ')}
+              {isFollowUp ? 'Counter-draft' : 'Draft appeal'} · {latest.status.replaceAll('_', ' ')}
             </span>
             <span>{formatDate(latest.updatedAt)}</span>
           </div>
@@ -1398,11 +1399,11 @@ function AppealView({
       <aside className="review-margin">
         <div className="review-status">
           <span>Review state</span>
-          <strong>{isFollowUp ? 'Follow-up needs approval' : statusCopy[detail.case.status]}</strong>
+          <strong>{isFollowUp ? 'Counter-draft needs approval' : statusCopy[detail.case.status]}</strong>
           <p>
             {canReview
               ? isFollowUp
-                ? 'A reply arrived. This follow-up still will not send until you approve it.'
+                ? 'They rejected it. Backstop re-grounded against their reason; this counter still will not send until you approve it.'
                 : 'Nothing leaves Backstop until you approve this exact draft.'
               : 'This version is locked because its review state has changed.'}
           </p>
@@ -1453,7 +1454,7 @@ function AppealView({
                   {busy === 'approve'
                     ? 'Recording approval…'
                     : isFollowUp
-                      ? 'Approve and send follow-up'
+                      ? 'Approve and send counter-draft'
                       : 'Approve and send appeal'}
                 </button>
                 <button className="secondary-action" type="button" onClick={() => setEditing(true)}>
@@ -1587,8 +1588,8 @@ function EmailView({
         <div className="followup-banner" role="status">
           <div>
             <p className="props-label">Human gate</p>
-            <strong>Follow-up draft ready</strong>
-            <p>The payer reply is on file. Approve remains the only send gate.</p>
+            <strong>Counter-draft ready</strong>
+            <p>They rejected it. Backstop re-grounded against their stated reason and drafted a reply. Nothing sends until you approve it.</p>
           </div>
           <button className="primary-action" type="button" onClick={() => setTab('appeal')}>
             Review &amp; approve →
@@ -1610,13 +1611,13 @@ function EmailView({
       {hasOutbound && !hasInbound && (
         <div className="reply-demo" role="group" aria-label="Demonstrate the reply loop">
           <div>
-            <p className="props-label">Two-way demo</p>
+            <p className="props-label">Break and repair</p>
             <strong>No reply yet from {detail.case.counterpartyName}</strong>
             <p>
-              Real payer replies arrive on the AgentMail webhook and thread here.
-              This fictional address never answers, so you can inject one demo
-              reply to see the loop. A reply never sends anything — the follow-up
-              still needs your approval.
+              Real replies arrive on the AgentMail webhook and thread here. This
+              fictional address never answers, so simulate the insurer upholding
+              the denial: Backstop re-searches policy against their stated reason
+              and drafts a counter. Nothing sends until you approve it.
             </p>
           </div>
           <button
@@ -1633,7 +1634,7 @@ function EmailView({
                 .finally(() => setReplyBusy(false))
             }}
           >
-            {replyBusy ? 'Adding demo reply…' : 'Inject a fictional payer reply'}
+            {replyBusy ? 'Simulating the rejection…' : 'Simulate an insurer rejection'}
           </button>
         </div>
       )}

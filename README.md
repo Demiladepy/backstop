@@ -6,6 +6,9 @@ Backstop turns a medical insurance denial into a cited appeal you control. It re
 
 [Live app](https://festive-roadrunner-713.convex.site) · [Demo script](DEMO.md) · [Demo video](https://github.com/Demiladepy/backstop/releases/download/demo-video/backstop-hero-demo.webm)
 
+**Built for the Convex All Gas Hackathon on four sponsor layers:**
+[@convex](https://x.com/Convex) (state) · [@firecrawl](https://x.com/firecrawl) (evidence) · [@OpenAI](https://x.com/openai) (reasoning) · [@agentmail](https://x.com/agentmail) (correspondence)
+
 <p align="center">
   <img src="public/images/alpine.jpg" alt="Backstop landing hero — alpine dusk" width="1200" />
 </p>
@@ -19,7 +22,11 @@ Open [festive-roadrunner-713.convex.site](https://festive-roadrunner-713.convex.
 ```
 Denial + EOB  →  Evidence  →  Appeal (grounded)  →  Approve  →  Email
      Firecrawl parse          OpenAI cited draft      AgentMail send
-     + policy scrape          unverified if uncited   replies still gated
+     + policy scrape          unverified if uncited
+
+Insurer rejects  →  Re-ground  →  Counter-draft  →  Approve  →  Email
+  AgentMail inbound   Firecrawl re-search       OpenAI answers      still gated
+                      against their reason      their stated reason
 ```
 
 Email and Watch appear only after the send gate. There is no side path.
@@ -32,14 +39,26 @@ On **Appeal**, the three panes are the product:
 
 Approve is the only path that delivers mail.
 
-## Stack (real work, not README badges)
+## Break and repair
 
-| Sponsor | What it actually does |
-|---------|------------------------|
-| **Convex** | Reactive backend, auth, file storage, audit log, scheduling, [static hosting](https://festive-roadrunner-713.convex.site) |
-| **Firecrawl** | Parse the denial, search/scrape public policy, optional deadline/page monitors, form fill that stops before submit |
-| **OpenAI** | Cited appeal draft and reply understanding. Unsupported claims stay marked `unverified` |
-| **AgentMail** | Dedicated inbox, outbound send, inbound thread. Follow-ups still need approval |
+Real appeals get rejected. Backstop does not stop there, and it does not reply on its own.
+
+1. **Insurer rejects.** A reply lands on the AgentMail thread: *"the denial is upheld. Coverage for advanced imaging requires documentation of at least six weeks of provider-directed conservative treatment…"*
+2. **Agent re-grounds.** Backstop pulls the stated reason out of the reply and runs a fresh Firecrawl search and scrape aimed at it. Results go through the same checks as first-pass research: error pages rejected, quotes matched verbatim. Survivors are appended to the case as new evidence.
+3. **Counter-draft, gated.** OpenAI answers their reason point by point, preferring the newly retrieved sources and citing only verified ones. It lands as **pending approval**. Nothing sends until you approve the exact words.
+
+Every step is on the record: `demo.inbound_simulated` → `external.firecrawl.reground` (*"2 new policy sources"*) → `external.openai.draft_appeal` → awaiting approval. On the live demo, open **Email → Simulate an insurer rejection** (the fictional payer address never answers on its own).
+
+## Four sponsor layers
+
+Each sponsor owns one layer. Remove any one and the product stops working.
+
+| Layer | Sponsor | What it does in Backstop |
+|-------|---------|--------------------------|
+| **1 · State** | [**Convex**](https://convex.dev) [@convex](https://x.com/Convex) | Reactive queries push every pipeline step live with no refresh. Mutations are the only writers. The scheduler chains parse → research → draft and re-ground → counter-draft. Plus Convex Auth, file storage for uploads, an hourly cron for monitors, HTTP actions for the AgentMail and Firecrawl webhooks, the append-only `auditLog`, and [static hosting](https://festive-roadrunner-713.convex.site) through the official component. |
+| **2 · Evidence** | [**Firecrawl**](https://firecrawl.dev) [@firecrawl](https://x.com/firecrawl) | `/parse` reads the uploaded denial. `/search` + `/scrape` retrieve public payer policy, and run again against an insurer's rejection reason. `/monitor` watches deadlines and pages. `/interact` fills a public form and stops before submit. |
+| **3 · Reasoning** | [**OpenAI**](https://openai.com) [@OpenAI](https://x.com/openai) | Extracts a verbatim clause from each policy page, drafts the cited appeal, and writes the counter-draft that answers a rejection. Structured outputs only. A paragraph without a verified source ID is labelled `unverified`. |
+| **4 · Correspondence** | [**AgentMail**](https://agentmail.to) [@agentmail](https://x.com/agentmail) | A real inbox sends the approved appeal (`messages/send`, real `message_id` and `thread_id`). The inbound webhook threads replies against it, and a reply is what triggers break and repair. |
 
 Every external step appends an immutable `auditLog` row.
 
@@ -65,7 +84,7 @@ Sponsor keys live in Convex environment variables, not the frontend. Only `VITE_
 
 ```bash
 npm run lint
-npm test                     # 26 convex-test cases
+npm test                     # 29 convex-test cases
 npm run build
 npx playwright test
 npx playwright test --config=e2e/live-smoke.config.ts   # live convex.site

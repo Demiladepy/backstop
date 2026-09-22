@@ -852,3 +852,78 @@ export const failExternalDepth = internalMutation({
     return null;
   },
 });
+
+/**
+ * Break-and-repair: after an insurer rejects, append newly retrieved policy
+ * sources to the case without touching its status or scheduling a draft.
+ * The counter-draft that follows is created by the reply pipeline and still
+ * lands as pending_approval, so the human gate is unchanged.
+ */
+export const appendRegroundSources = internalMutation({
+  args: {
+    caseId: v.id("cases"),
+    ownerId: v.string(),
+    operationId: v.string(),
+    focus: v.string(),
+    sources: v.array(policySourceInput),
+    error: v.optional(v.string()),
+  },
+  returns: v.array(v.id("sources")),
+  handler: async (ctx, args) => {
+    const caseRow = await ctx.db.get("cases", args.caseId);
+    if (!caseRow || caseRow.ownerId !== args.ownerId) {
+      fail("Case not found");
+    }
+    const existing = await ctx.db
+      .query("sources")
+      .withIndex("by_caseId", (q) => q.eq("caseId", args.caseId))
+      .take(50);
+    const known = new Set(existing.map((row) => row.url).filter(Boolean));
+    const now = Date.now();
+    const sourceIds: Id<"sources">[] = [];
+    for (const source of args.sources.slice(0, MAX_POLICY_SOURCES)) {
+      if (
+        known.has(source.url) ||
+        !source.url.startsWith("http") ||
+        !source.quotedText.trim() ||
+        !source.content.includes(source.quotedText.trim()) ||
+        source.content.length > MAX_SOURCE_CONTENT
+      ) {
+        continue;
+      }
+      known.add(source.url);
+      sourceIds.push(
+        await ctx.db.insert("sources", {
+          caseId: args.caseId,
+          ownerId: args.ownerId,
+          kind: "policy",
+          title: source.title.trim(),
+          url: source.url,
+          publisher: source.publisher?.trim() || undefined,
+          content: source.content.trim(),
+          excerpt: source.excerpt.trim().slice(0, 1_500),
+          quotedText: source.quotedText.trim().slice(0, 4_000),
+          relevanceNote: source.relevanceNote.trim().slice(0, 1_000),
+          verification: source.verification,
+          retrievedAt: now,
+        }),
+      );
+    }
+    await ctx.db.insert("auditLog", {
+      caseId: args.caseId,
+      ownerId: args.ownerId,
+      actor: "agent",
+      event: "external.firecrawl.reground",
+      operationId: args.operationId,
+      status: args.error && sourceIds.length === 0 ? "failed" : "succeeded",
+      entityType: "case",
+      entityId: args.caseId,
+      detail: (sourceIds.length > 0
+        ? `Re-grounded against the rejection ("${args.focus}"): ${sourceIds.length} new policy source${sourceIds.length === 1 ? "" : "s"}.`
+        : `Re-grounding against the rejection ("${args.focus}") found no new verifiable source${args.error ? `: ${args.error}` : "; counter-draft uses existing evidence"}.`
+      ).slice(0, 1_000),
+      createdAt: now,
+    });
+    return sourceIds;
+  },
+});

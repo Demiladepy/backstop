@@ -431,3 +431,82 @@ export const runFindPolicy = internalAction({
     }
   },
 });
+
+/**
+ * Break-and-repair. When the insurer rejects an appeal it names a reason;
+ * search and scrape again aimed at that reason, through the same
+ * error-page rejection and verbatim-quote checks as first-pass research,
+ * then append what survives to the case. Never throws: a failed re-ground
+ * is audited and the counter-draft falls back to existing evidence.
+ */
+export async function regroundForRejection(
+  ctx: ActionCtx,
+  args: { caseId: Id<"cases">; ownerId: string; focus: string },
+): Promise<Id<"sources">[]> {
+  const operationId = `firecrawl:reground:${args.caseId}:${crypto.randomUUID()}`;
+  const focus = args.focus.replace(/\s+/g, " ").trim().slice(0, 300);
+  try {
+    const context: {
+      case: Doc<"cases">;
+      sources: Doc<"sources">[];
+    } | null = await ctx.runQuery(internal.workflowModel.getCaseContext, {
+      caseId: args.caseId,
+      ownerId: args.ownerId,
+    });
+    if (!context) {
+      return [];
+    }
+    const documentExcerpt = context.sources
+      .filter((source) => source.kind === "document")
+      .map((source) => source.excerpt?.trim() || source.content.slice(0, 2_000))
+      .join("\n\n")
+      .slice(0, 4_000);
+    const known = new Set(context.sources.map((source) => source.url).filter(Boolean));
+    const candidates = (
+      await collectCandidates({
+        title: context.case.title,
+        payer: context.case.counterpartyName ?? "payer",
+        category: context.case.category,
+        focus,
+        documentExcerpt: `${focus}\n\n${documentExcerpt}`,
+      })
+    ).filter((candidate) => !known.has(candidate.url));
+
+    const built: BuiltPolicySource[] = [];
+    for (const candidate of candidates) {
+      if (built.filter((row) => row.verification === "quoted").length >= TARGET_POLICY_SOURCES) {
+        break;
+      }
+      try {
+        built.push(await buildSourceFromCandidate(ctx, candidate, `${focus}\n\n${documentExcerpt}`));
+      } catch {
+        // Rejected or unscrapeable; try the next candidate.
+      }
+    }
+    const ordered = [
+      ...built.filter((row) => row.verification === "quoted"),
+      ...built.filter((row) => row.verification !== "quoted"),
+    ].slice(0, TARGET_POLICY_SOURCES);
+    return await ctx.runMutation(internal.workflowModel.appendRegroundSources, {
+      caseId: args.caseId,
+      ownerId: args.ownerId,
+      operationId,
+      focus,
+      sources: ordered,
+    });
+  } catch (error) {
+    try {
+      await ctx.runMutation(internal.workflowModel.appendRegroundSources, {
+        caseId: args.caseId,
+        ownerId: args.ownerId,
+        operationId,
+        focus,
+        sources: [],
+        error: safeExternalError(error),
+      });
+    } catch {
+      // Auditing the failure must not block the counter-draft.
+    }
+    return [];
+  }
+}

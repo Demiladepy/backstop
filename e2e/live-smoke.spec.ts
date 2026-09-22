@@ -181,11 +181,11 @@ test("hero: sample case through grounding cite and approve", async ({
   // The reply loop lives on Email, after the send gate - never on the hero
   // rail. Exercise it so the two-way AgentMail path is actually proven.
   const injectReply = page.getByRole("button", {
-    name: /Inject a fictional payer reply/i,
+    name: /Simulate an insurer rejection/i,
   });
   await expect(injectReply).toBeVisible({ timeout: 30_000 });
   await injectReply.click();
-  await expect(page.getByText(/FICTIONAL DEMO REPLY/i).first()).toBeVisible({
+  await expect(page.getByText(/denial is upheld/i).first()).toBeVisible({
     timeout: 60_000,
   });
   // A reply must never send anything on its own.

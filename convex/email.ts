@@ -749,9 +749,10 @@ export const simulateInboundReply = mutation({
     const body = [
       "FICTIONAL DEMO REPLY — NOT A REAL PAYER MESSAGE",
       "",
-      `Hello, we received appeal reference DEMO-4821 regarding ${caseRow.title}.`,
-      "We are reviewing the submitted clinical information and the cited policy language.",
-      "This automated demonstration reply does not approve or deny coverage.",
+      `Re: appeal reference DEMO-4821 (${caseRow.title}).`,
+      "After review, the denial is upheld.",
+      "Coverage for advanced imaging requires documentation of at least six weeks of provider-directed conservative treatment, such as physical therapy, and the records submitted do not show it.",
+      "You may submit additional clinical information or request an external review.",
       "",
       `— ${caseRow.counterpartyName ?? "Demo Appeals Desk"}`,
     ].join("\n");
@@ -784,7 +785,7 @@ export const simulateInboundReply = mutation({
       status: "succeeded",
       entityType: "message",
       entityId: String(messageRowId),
-      detail: "Fictional inbound reply injected for the public demo.",
+      detail: "Fictional insurer rejection injected for the public demo (denial upheld).",
       createdAt: now,
     });
     await ctx.scheduler.runAfter(0, internal.replyDraft.proposeFollowUp, {
