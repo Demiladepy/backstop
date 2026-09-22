@@ -3,6 +3,7 @@ import { Authenticated, AuthLoading, Unauthenticated } from 'convex/react'
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { BrandMark } from './BrandMark'
+import { EvidenceDemo, GateDemo } from './LandingDemos'
 
 const GATE_ROWS = [
   { id: 'draft', label: 'Draft ready', status: 'waiting', tone: 'muted' as const },
@@ -246,20 +247,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
             </ol>
           </section>
 
-          <figure className="aw-breakthrough" aria-hidden="true">
-            <img
-              src="/images/moss.jpg"
-              alt=""
-              width={1600}
-              height={900}
-              loading="lazy"
-              decoding="async"
-            />
-            <figcaption className="aw-breakthrough-caption">
-              <span>Evidence first</span>
-              <strong>Every claim needs a source you can open.</strong>
-            </figcaption>
-          </figure>
+          <EvidenceDemo />
 
           <section className="aw-section" id="human-gate" aria-labelledby="gate-title">
             <div className="aw-dark-block">
@@ -390,20 +378,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
             </ul>
           </section>
 
-          <figure className="aw-breakthrough aw-breakthrough-close" aria-hidden="true">
-            <img
-              src="/images/forest.jpg"
-              alt=""
-              width={1600}
-              height={900}
-              loading="lazy"
-              decoding="async"
-            />
-            <figcaption className="aw-breakthrough-caption">
-              <span>Human gate</span>
-              <strong>Nothing leaves until you approve the exact words.</strong>
-            </figcaption>
-          </figure>
+          <GateDemo />
 
           <section className="aw-close">
             <h2>Open the private demo when you are ready.</h2>

@@ -1,0 +1,454 @@
+/*
+ * Interactive breakthrough strips on the landing page.
+ *
+ * The photo stays as atmosphere; the glass panel is the interaction container,
+ * a working miniature of the product's own grounding pane and approval gate.
+ * Each panel sits over the darker side of its photo. Selectors are written to
+ * out-rank the older .aw-breakthrough rules in depth.css, so load order does
+ * not matter.
+ */
+
+.aw-breakthrough.aw-proof {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  aspect-ratio: auto;
+  min-height: clamp(520px, 46vw, 620px);
+  padding: clamp(18px, 3vw, 36px);
+  isolation: isolate;
+}
+
+.aw-breakthrough.aw-proof-gate {
+  justify-content: flex-start;
+}
+
+.aw-proof .aw-proof-photo {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.aw-proof::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to left, rgba(9, 9, 11, 0.58), rgba(9, 9, 11, 0.04) 62%);
+}
+
+.aw-proof.aw-proof-gate::after {
+  background: linear-gradient(to right, rgba(9, 9, 11, 0.62), rgba(9, 9, 11, 0.04) 62%);
+}
+
+.aw-proof-panel {
+  position: relative;
+  display: grid;
+  gap: 18px;
+  width: min(100%, 520px);
+  min-width: 0;
+  padding: clamp(18px, 2.4vw, 28px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 28px;
+  background: rgba(9, 9, 11, 0.64);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1);
+  backdrop-filter: blur(16px) saturate(1.1);
+  color: var(--color-snow, #ffffff);
+}
+
+.aw-proof-panel.aw-proof-panel-evidence {
+  width: min(100%, 860px);
+}
+
+.aw-proof-head {
+  display: grid;
+  gap: 8px;
+}
+
+.aw-proof-kicker {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #c3c3cc;
+}
+
+.aw-proof-head h2 {
+  margin: 0;
+  font-size: clamp(1.25rem, 2.2vw, 1.625rem);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+  text-wrap: balance;
+}
+
+.aw-proof-head p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #c3c3cc;
+}
+
+/* Evidence: claims on the left, the source behind the active one on the right. */
+
+.aw-proof-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.aw-proof-claims {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.aw-proof-claim {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.62);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 150ms var(--ease-out),
+    border-color 150ms var(--ease-out),
+    color 150ms var(--ease-out);
+}
+
+.aw-proof-claim:hover {
+  color: #ffffff;
+}
+
+.aw-proof-claim.is-active {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.aw-proof-claim:focus-visible,
+.aw-gate-hold:focus-visible,
+.aw-gate-reset:focus-visible,
+.aw-proof-source a:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
+.aw-proof-marker {
+  padding: 2px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  transition:
+    background-color 150ms var(--ease-out),
+    color 150ms var(--ease-out);
+}
+
+.aw-proof-claim.is-active .aw-proof-marker {
+  border-color: #ffffff;
+  background: #ffffff;
+  color: var(--color-obsidian, #09090b);
+}
+
+/* Ember keeps its one role: a scarce badge that needs attention. */
+.aw-proof-claim.is-unverified .aw-proof-marker {
+  border-color: rgba(255, 90, 0, 0.6);
+  color: var(--color-ember, #ff5a00);
+}
+
+.aw-proof-claim.is-unverified.is-active .aw-proof-marker {
+  border-color: var(--color-ember, #ff5a00);
+  background: var(--color-ember, #ff5a00);
+  color: #ffffff;
+}
+
+.aw-proof-source {
+  min-height: 220px;
+  padding: 16px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.aw-proof-source-inner {
+  display: grid;
+  gap: 10px;
+  animation: aw-proof-in 200ms var(--ease-out) both;
+}
+
+@keyframes aw-proof-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.aw-proof-source-meta {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #c3c3cc;
+}
+
+.aw-proof-source-inner.is-unverified .aw-proof-source-meta {
+  color: var(--color-ember, #ff5a00);
+}
+
+.aw-proof-source-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.aw-proof-source blockquote {
+  margin: 0;
+  padding-left: 12px;
+  border-left: 2px solid rgba(255, 255, 255, 0.5);
+  font-size: 15px;
+  line-height: 1.55;
+  color: #ffffff;
+  text-wrap: pretty;
+}
+
+.aw-proof-source-note {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.aw-proof-source a {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  min-height: 44px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.45);
+  text-underline-offset: 3px;
+}
+
+.aw-proof-source a:hover {
+  text-decoration-color: #ffffff;
+}
+
+/* Gate: a draft, a three-step rail, and a deliberate hold to approve. */
+
+.aw-gate-draft {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  transition: border-color 200ms var(--ease-out);
+}
+
+.aw-proof-panel[data-state="holding"] .aw-gate-draft {
+  border-color: rgba(255, 255, 255, 0.42);
+}
+
+.aw-gate-draft p {
+  margin: 0;
+}
+
+.aw-gate-draft-meta {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #c3c3cc;
+}
+
+.aw-gate-draft-subject {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.aw-gate-draft-body {
+  font-size: 14px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.aw-gate-rail {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.aw-gate-rail li {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  transition: border-color 200ms var(--ease-out);
+}
+
+.aw-gate-rail b {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.aw-gate-rail li.is-live {
+  border-color: rgba(255, 90, 0, 0.55);
+}
+
+.aw-gate-rail li.is-live b {
+  color: var(--color-ember, #ff5a00);
+}
+
+.aw-gate-rail li.is-locked b {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.aw-gate-rail li.is-done b::before {
+  content: "✓ ";
+}
+
+.aw-gate-hold {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  min-height: 52px;
+  border: 0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--color-obsidian, #09090b);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+.aw-gate-hold-fill {
+  position: absolute;
+  inset: 0;
+  background: rgba(9, 9, 11, 0.18);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 180ms var(--ease-out);
+}
+
+/* Duration mirrors HOLD_MS in LandingDemos.tsx. */
+.aw-gate-hold[data-holding] .aw-gate-hold-fill {
+  transform: scaleX(1);
+  transition: transform 1100ms linear;
+}
+
+.aw-gate-hold-label {
+  position: relative;
+}
+
+.aw-gate-done {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+}
+
+.aw-gate-done p {
+  flex: 1 1 240px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #ffffff;
+}
+
+.aw-gate-reset {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: transparent;
+  color: #ffffff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.aw-gate-reset:hover {
+  border-color: #ffffff;
+}
+
+.aw-proof-fineprint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+@media (max-width: 720px) {
+  .aw-breakthrough.aw-proof {
+    min-height: 0;
+    padding: 12px;
+    border-radius: 28px;
+  }
+
+  /* Let the photo read above the panel instead of hiding behind it. */
+  .aw-proof-panel,
+  .aw-proof-panel.aw-proof-panel-evidence {
+    width: 100%;
+    margin-top: 150px;
+    border-radius: 22px;
+  }
+
+  .aw-proof::after,
+  .aw-proof.aw-proof-gate::after {
+    background: linear-gradient(to top, rgba(9, 9, 11, 0.62), rgba(9, 9, 11, 0) 70%);
+  }
+
+  .aw-proof-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .aw-proof-source {
+    min-height: 0;
+  }
+}
