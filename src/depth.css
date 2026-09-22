@@ -426,15 +426,6 @@
   overflow: hidden;
 }
 
-.intake-depth .intake-card::before {
-  content: '';
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
-  background: linear-gradient(180deg, var(--color-ember), var(--color-obsidian));
-  opacity: 0.85;
-}
-
 .intake-depth .intake-card {
   position: relative;
 }
