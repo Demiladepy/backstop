@@ -1,49 +1,81 @@
 # Backstop
 
-Backstop helps a person contest a medical insurance denial without handing
-control to an autonomous agent.
+Drafts and sends the appeals you approve — not legal or medical advice.
 
-> Drafts and sends the appeals you approve — not legal or medical advice.
+Backstop turns a medical insurance denial into a cited appeal you control. It reads a sample denial, finds the payer’s published policy, drafts from stored sources, and **does not send until you approve**.
 
-**Live app:** [festive-roadrunner-713.convex.site](https://festive-roadrunner-713.convex.site)  
-**Repo:** [github.com/Demiladepy/backstop](https://github.com/Demiladepy/backstop)  
-**Demo script:** [DEMO.md](DEMO.md)  
-**Silent demo video:** [release asset](https://github.com/Demiladepy/backstop/releases/download/demo-video/backstop-hero-demo.webm)
+[Live app](https://festive-roadrunner-713.convex.site) · [Demo script](DEMO.md) · [Demo video](https://github.com/Demiladepy/backstop/releases/download/demo-video/backstop-hero-demo.webm)
 
-## What it does
+<p align="center">
+  <img src="public/images/alpine.jpg" alt="Backstop landing hero — alpine dusk" width="1200" />
+</p>
 
-1. Open a sample medical-denial case (fictional denial letter + EOB).
-2. Parse documents with Firecrawl.
-3. Search and scrape public policy language.
-4. Draft a cited appeal with OpenAI.
-5. Send only after you approve.
-6. Thread replies with AgentMail (follow-ups still need approval).
-7. Optionally watch a deadline / public page and prepare a form up to submit.
+One case type. One host. One send gate.
+
+## The rail
+
+Open [festive-roadrunner-713.convex.site](https://festive-roadrunner-713.convex.site) → **Enter private demo** → **Start a sample case**.
+
+```
+Denial + EOB  →  Evidence  →  Appeal (grounded)  →  Approve  →  Email
+     Firecrawl parse          OpenAI cited draft      AgentMail send
+     + policy scrape          unverified if uncited   replies still gated
+```
+
+Email and Watch appear only after the send gate. There is no side path.
+
+On **Appeal**, the three panes are the product:
+
+| Denial | Claim | Policy proof |
+|--------|--------|----------------|
+| Their reason line, highlighted | The sentence Backstop wants to send | Verbatim clause from a live URL, with **Open original** |
+
+Approve is the only path that delivers mail.
+
+## Stack (real work, not README badges)
+
+| Sponsor | What it actually does |
+|---------|------------------------|
+| **Convex** | Reactive backend, auth, file storage, audit log, scheduling, [static hosting](https://festive-roadrunner-713.convex.site) |
+| **Firecrawl** | Parse the denial, search/scrape public policy, optional deadline/page monitors, form fill that stops before submit |
+| **OpenAI** | Cited appeal draft and reply understanding. Unsupported claims stay marked `unverified` |
+| **AgentMail** | Dedicated inbox, outbound send, inbound thread. Follow-ups still need approval |
+
+Every external step appends an immutable `auditLog` row.
+
+## Guardrails
+
+- Demo only. **Not HIPAA compliant.** Use fictional or fully de-identified samples from `public/samples/`. Never enter real health information.
+- Never collect passwords, card numbers, or bank details.
+- Drafting and sending are separate. Nothing leaves without `approveDraft`.
+- No citation → the claim is labelled unverified, not asserted.
 
 ## Local development
 
 ```bash
 npm install
-npx convex dev
+cp .env.example .env.local   # set VITE_CONVEX_URL
+npx convex dev               # set Firecrawl, OpenAI, AgentMail on the deployment
 npm run dev
 ```
 
-Checks:
+Sponsor keys live in Convex environment variables, not the frontend. Only `VITE_CONVEX_URL` is public.
+
+### Checks
 
 ```bash
 npm run lint
-npm test
+npm test                     # 26 convex-test cases
 npm run build
 npx playwright test
-npx playwright test --config=e2e/live-smoke.config.ts
-npm run demo:record
+npx playwright test --config=e2e/live-smoke.config.ts   # live convex.site
 ```
 
-Keep Firecrawl, OpenAI, and AgentMail keys in Convex environment variables.
+## Docs
 
-Submission paste sheet: [SUBMISSION.md](SUBMISSION.md).
-
-## Safety
-
-This is a hackathon demo and is not HIPAA compliant. Use only fake or sample
-documents. Never enter credentials, card numbers, or bank details.
+| Doc | What it is |
+|-----|------------|
+| [DEMO.md](DEMO.md) | Under-3-minute walkthrough for judges |
+| [SUBMISSION.md](SUBMISSION.md) | Links and paste sheet |
+| [hackathon.md](hackathon.md) | Build log |
+| [BACKSTOP.md](BACKSTOP.md) | Product rules |

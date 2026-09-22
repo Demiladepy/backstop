@@ -293,13 +293,22 @@ export function locateFlexible(
  */
 export function denialHighlightSegments(excerpt: string): DenialSegment[] {
   const plain: DenialSegment[] = [{ text: excerpt, hit: false }];
-  const normalized = excerpt.replace(/\s+/g, " ").trim();
-  if (!normalized) {
+  if (!excerpt.trim()) {
     return plain;
   }
-  const sentences = normalized
-    .split(/(?<=[.!?])\s+/)
-    .filter((sentence) => sentence.length <= MAX_DENIAL_HIT_CHARS);
+  // Split on structure before sentences. Letter headers ("September 8, 2026",
+  // "# Notice of ...", "Member: ...") carry no full stops, so splitting the
+  // whole letter on sentence punctuation fused them onto the reason sentence
+  // and the highlight swallowed the entire header block.
+  const blocks = excerpt
+    .split(/\n\s*\n|\n(?=\s*#)|\n(?=\s*[A-Z][A-Za-z ]{1,24}:\s)/)
+    .map((block) => block.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  const sentences = blocks
+    .flatMap((block) => block.split(/(?<=[.!?])\s+/))
+    .filter(
+      (sentence) => sentence.length >= 20 && sentence.length <= MAX_DENIAL_HIT_CHARS,
+    );
 
   let hit: string | null = null;
   for (const tier of DENIAL_REASON_TIERS) {

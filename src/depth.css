@@ -4,7 +4,11 @@
   --depth-noise: url('/images/noise.svg');
   --depth-moss: url('/images/moss.jpg');
   --depth-forest: url('/images/forest.jpg');
-  --depth-grain: url('/images/paper-grain.jpg');
+  /* A seamless, desaturated grain. This used to point at paper-grain.jpg,
+     which is a vivid purple and cyan wallpaper: tiled at 280-560px under
+     white overlays it produced purple washes with hard seams on every
+     document tile, the empty board, the appeal paper and the record. */
+  --depth-grain: url('/images/noise.svg');
   --depth-wash: linear-gradient(
     180deg,
     rgba(244, 244, 245, 0.92) 0%,
@@ -646,25 +650,6 @@
   margin-bottom: 20px;
 }
 
-.audit-depth .audit-timeline li {
-  position: relative;
-  box-shadow: var(--depth-inset) !important;
-}
-
-.audit-depth .audit-timeline li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 16px;
-  bottom: 16px;
-  width: 3px;
-  border-radius: 100px;
-  background: var(--color-mist);
-}
-
-.audit-depth .audit-timeline li:nth-child(3n)::before {
-  background: var(--color-ember);
-}
 
 /* Soft motion */
 @media (prefers-reduced-motion: no-preference) {

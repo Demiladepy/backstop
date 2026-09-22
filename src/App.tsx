@@ -136,6 +136,7 @@ function describeAuditEvent(event: string): { vendor: string; title: string } {
     'external.firecrawl.interact': { vendor: 'Firecrawl', title: 'Public form filled' },
     'external.openai.draft_appeal': { vendor: 'OpenAI', title: 'Appeal drafted' },
     'external.agentmail.send_queued': { vendor: 'AgentMail', title: 'Send queued' },
+    'external.agentmail.send_delivered': { vendor: 'AgentMail', title: 'Appeal delivered' },
     'external.agentmail.send': { vendor: 'AgentMail', title: 'Message sent' },
     'external.agentmail.inbound_received': { vendor: 'AgentMail', title: 'Inbound received' },
     'demo.inbound_simulated': { vendor: 'Demo', title: 'Fictional reply injected' },
@@ -1246,15 +1247,17 @@ function AppealView({
             <div className="denial-compare-item">
               <p className="denial-compare-title">{primaryDenial.title}</p>
               <blockquote className="denial-full">
-                {denialHighlightSegments(primaryDenial.excerpt).map((part, index) =>
-                  part.hit ? (
+                {denialHighlightSegments(primaryDenial.excerpt).map((part, index) => {
+                  // Parsed letters arrive as markdown; show headings, not "#" marks.
+                  const text = part.text.replace(/^[ \t]*#{1,6}[ \t]+/gm, '')
+                  return part.hit ? (
                     <mark key={index} className="denial-hit">
-                      {part.text}
+                      {text}
                     </mark>
                   ) : (
-                    <span key={index}>{part.text}</span>
-                  ),
-                )}
+                    <span key={index}>{text}</span>
+                  )
+                })}
               </blockquote>
             </div>
           ) : (
@@ -1692,7 +1695,7 @@ function WatchView({
   const watchPolicy = useAction(api.depth.watchPolicy)
   const fillPublicForm = useAction(api.depth.fillPublicForm)
   const [policyUrl, setPolicyUrl] = useState(
-    'https://www.medicare.gov/claims-appeals/file-an-appeal',
+    'https://www.medicare.gov/claims-appeals/how-do-i-file-an-appeal',
   )
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')

@@ -813,6 +813,9 @@ textarea:focus {
 
 .rail-list {
   display: grid;
+  /* Without this the grid stretches a lone case button to the full column
+     height and centres its label hundreds of pixels down: the rail looks empty. */
+  align-content: start;
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -923,6 +926,8 @@ textarea:focus {
   display: flex;
   gap: 0;
   overflow-x: auto;
+  /* A 1px vertical overflow drew a scrollbar with arrows beside the tabs. */
+  overflow-y: hidden;
   padding: 0 var(--page-gutter);
   border-bottom: var(--hairline);
   background: transparent;
@@ -950,13 +955,40 @@ textarea:focus {
 }
 
 .case-tabs button.active {
-  border-color: var(--color-ember);
-  color: var(--color-carbon-vellum);
+  border-bottom: 2px solid var(--color-ember);
+  color: var(--color-obsidian);
+  font-weight: 600;
 }
 
 .case-content {
   min-width: 0;
   flex: 1;
+  /* Layouts inside respond to the space they actually get (window minus
+     rail and properties), not to the window. Viewport breakpoints let
+     Evidence and Record overflow at every width from ~1100px to ~1500px. */
+  container: case-content / inline-size;
+}
+
+@container case-content (max-width: 900px) {
+  .case-content .evidence-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .case-content .evidence-layout .document-column {
+    border-right: 0;
+    border-bottom: 1px solid var(--rule);
+  }
+}
+
+@container case-content (max-width: 980px) {
+  .case-content .audit-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-lg);
+  }
+
+  .case-content .audit-layout > header {
+    position: static;
+  }
 }
 
 .case-props {
@@ -1071,19 +1103,36 @@ textarea:focus {
   font-size: .78rem;
 }
 
+/* Next action and recent record are cards now, so they need a gutter and
+   gaps like every other tab. The old two-column grid kept a slot for a case
+   summary that no longer renders, which left an empty half beside the card. */
 .overview-grid {
   display: grid;
-  grid-template-columns: minmax(260px, .85fr) minmax(0, 1.15fr);
-  min-height: 100%;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: var(--space-lg);
+  padding: clamp(var(--space-lg), 3vw, var(--space-xl)) var(--page-gutter);
 }
 
 .next-step,
 .recent-record,
+.case-sheet,
 .document-column,
 .policy-column,
 .email-layout,
 .audit-layout {
   padding: clamp(var(--space-lg), 3vw, var(--space-xl)) var(--page-gutter);
+}
+
+/* The next-step column shrinks items to their content, which collapsed the
+   Watch URL field to ~170px and cut the address off. */
+.next-step > label {
+  align-self: stretch;
+  max-width: 520px;
+}
+
+.next-step > label input {
+  width: 100%;
 }
 
 .next-step {
@@ -1092,7 +1141,6 @@ textarea:focus {
   align-items: flex-start;
   justify-content: center;
   gap: var(--space-md);
-  border-right: var(--hairline);
   background: transparent;
 }
 
@@ -1207,7 +1255,6 @@ dd {
 
 .recent-record {
   grid-column: 1 / -1;
-  border-top: 1px solid var(--rule);
 }
 
 .section-heading {
@@ -1267,7 +1314,7 @@ dd {
 
 .evidence-layout {
   display: grid;
-  grid-template-columns: minmax(420px, .9fr) minmax(480px, 1.1fr);
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
 }
 
 .document-column {
@@ -2205,7 +2252,7 @@ dd {
 
 .audit-layout {
   display: grid;
-  grid-template-columns: minmax(260px, .55fr) minmax(560px, 1.45fr);
+  grid-template-columns: minmax(0, .55fr) minmax(0, 1.45fr);
   gap: var(--space-2xl);
 }
 
@@ -2229,15 +2276,27 @@ dd {
   margin: 0;
   padding: 0;
   list-style: none;
+  overflow: hidden;
+  border: 1px solid var(--color-cloud);
+  border-radius: var(--radius-cards);
+  background: var(--color-snow);
 }
 
 .audit-timeline li {
-  min-height: 130px;
   display: grid;
-  grid-template-columns: 40px 36px minmax(0, 1fr) auto;
+  grid-template-columns: 32px 32px minmax(0, 1fr) auto;
+  align-items: start;
   gap: var(--space-md);
-  padding: var(--space-lg) 0;
-  border-top: 1px solid var(--rule);
+  padding: 20px 24px;
+  border-top: 1px solid var(--color-cloud);
+}
+
+.audit-timeline li:first-child {
+  border-top: 0;
+}
+
+.audit-sequence {
+  padding-top: 7px;
 }
 
 .audit-sequence {
@@ -4054,11 +4113,12 @@ dd {
   .workflow-line li { font-size: .58rem; flex: none; }
   .workflow-line li span { display: none; }
 
+  /* Wrap instead of scrolling sideways, so no tab hides off-screen. */
   .case-tabs {
-    gap: var(--space-md);
-    overflow-x: auto;
+    flex-wrap: wrap;
+    gap: 0 var(--space-xs);
+    overflow-x: visible;
     padding-bottom: .2rem;
-    -webkit-overflow-scrolling: touch;
   }
 
   .case-tabs button {

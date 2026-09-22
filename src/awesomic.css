@@ -1238,8 +1238,7 @@
 .policy-proof-card,
 .extracted-source,
 .next-step,
-.recent-record,
-.audit-timeline li {
+.recent-record {
   border: 1px solid var(--color-cloud) !important;
   border-radius: var(--radius-cards) !important;
   background: var(--color-snow) !important;

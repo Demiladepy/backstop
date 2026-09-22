@@ -119,6 +119,39 @@ conservative treatment.`;
     expect(marked[0]!.text.length).toBeLessThan(420);
   });
 
+  test("does not swallow a punctuation-free letter header into the highlight", () => {
+    // The seeded sample letter as parsed. Its header lines carry no full stops,
+    // which once fused them onto the reason sentence and lit up the whole block.
+    const parsed = `FICTIONAL DEMO DOCUMENT — NOT A REAL PATIENT RECORD
+
+Aetna · FICTIONAL DEMONSTRATION LETTER
+
+This document was not issued by Aetna and describes no real member.
+
+September 8, 2026
+
+# Notice of adverse benefit determination
+
+Member: Casey Sample
+
+Reference: DEMO-4821
+
+Requested service: Outpatient MRI of the lumbar spine
+
+We denied the requested outpatient MRI because the information
+submitted did not show completion of six weeks of provider-directed
+conservative treatment. The request therefore does not meet the plan’s
+medical-necessity criteria for advanced imaging.
+
+## Your right to appeal`;
+    const marked = denialHighlightSegments(parsed).filter((part) => part.hit);
+    expect(marked).toHaveLength(1);
+    expect(marked[0]!.text.startsWith("We denied the requested outpatient MRI")).toBe(true);
+    expect(marked[0]!.text.endsWith("conservative treatment.")).toBe(true);
+    expect(marked[0]!.text).not.toContain("September");
+    expect(marked[0]!.text).not.toContain("Member:");
+  });
+
   test("leaves an excerpt untouched when no reason line is present", () => {
     const bland = "This notice confirms receipt of your recent correspondence.";
     expect(denialHighlightSegments(bland)).toEqual([

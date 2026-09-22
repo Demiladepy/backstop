@@ -14,7 +14,7 @@ import {
 const RECORDED_FORM_FILL = `[UNVERIFIED] Recorded fallback: a public, no-login complaint form was filled with fictional sample values (name Backstop Demo, issue medical denial appeal, contact appeals@example.com). Submit was not clicked. Use this only when live Firecrawl /interact is unavailable.`;
 
 const DEFAULT_PUBLIC_FORM =
-  "https://www.medicare.gov/claims-appeals/file-an-appeal";
+  "https://www.medicare.gov/claims-appeals/how-do-i-file-an-appeal";
 
 async function requireOwner(ctx: { auth: { getUserIdentity: () => Promise<{ tokenIdentifier: string } | null> } }) {
   const identity = await ctx.auth.getUserIdentity();
